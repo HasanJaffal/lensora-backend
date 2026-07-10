@@ -11,6 +11,9 @@ dependencies = [
     "asyncpg>=0.30",
     "pydantic>=2.10",
     "pydantic-settings>=2.7",
+    "pyjwt>=2.10",
+    "argon2-cffi>=23.1",
+    "email-validator>=2.2",
 ]
 
 [dependency-groups]

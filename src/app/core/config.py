@@ -18,8 +18,21 @@ class Settings(BaseSettings):
         default_factory=list, alias="CORS_ORIGINS"
     )
     secret_key: str | None = Field(default=None, alias="SECRET_KEY")
+    jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
+    access_token_expires_minutes: int = Field(
+        default=60 * 24, alias="ACCESS_TOKEN_EXPIRES_MINUTES"
+    )
     gemini_api_key: str | None = Field(default=None, alias="GEMINI_API_KEY")
     gemini_model: str | None = Field(default=None, alias="GEMINI_MODEL")
+
+    seed_doctor_email: str | None = Field(default=None, alias="SEED_DOCTOR_EMAIL")
+    seed_doctor_password: str | None = Field(default=None, alias="SEED_DOCTOR_PASSWORD")
+    seed_doctor_display_name_en: str | None = Field(
+        default=None, alias="SEED_DOCTOR_DISPLAY_NAME_EN"
+    )
+    seed_doctor_display_name_ar: str | None = Field(
+        default=None, alias="SEED_DOCTOR_DISPLAY_NAME_AR"
+    )
 
     @field_validator("cors_origins", mode="before")
     @classmethod

@@ -17,7 +17,8 @@ class ErrorCode(StrEnum):
     # Auth
     AUTH_INVALID_CREDENTIALS = "auth.invalidCredentials"
     AUTH_UNAUTHORIZED = "auth.unauthorized"
-    AUTH_TOKEN_EXPIRED = "auth.tokenExpired"
+    AUTH_SESSION_EXPIRED = "auth.sessionExpired"
+    AUTH_ACCOUNT_DISABLED = "auth.accountDisabled"
 
     # Patients
     PATIENT_NOT_FOUND = "patient.notFound"

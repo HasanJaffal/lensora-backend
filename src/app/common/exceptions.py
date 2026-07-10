@@ -47,6 +47,19 @@ class UnauthorizedError(AppError):
     default_code = ErrorCode.AUTH_UNAUTHORIZED
 
 
+class InvalidCredentialsError(UnauthorizedError):
+    default_code = ErrorCode.AUTH_INVALID_CREDENTIALS
+
+
+class SessionExpiredError(UnauthorizedError):
+    default_code = ErrorCode.AUTH_SESSION_EXPIRED
+
+
+class AccountDisabledError(AppError):
+    http_status = HTTPStatus.FORBIDDEN
+    default_code = ErrorCode.AUTH_ACCOUNT_DISABLED
+
+
 class AIUnavailableError(AppError):
     http_status = HTTPStatus.SERVICE_UNAVAILABLE
     default_code = ErrorCode.AI_UNAVAILABLE

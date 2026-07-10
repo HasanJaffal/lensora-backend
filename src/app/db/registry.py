@@ -6,5 +6,6 @@ module so the full schema is present before diffing.
 """
 
 from app.db.base import Base
+from app.features.auth.models import User
 
-__all__ = ["Base"]
+__all__ = ["Base", "User"]
