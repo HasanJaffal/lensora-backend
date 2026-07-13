@@ -60,6 +60,14 @@ class AccountDisabledError(AppError):
     default_code = ErrorCode.AUTH_ACCOUNT_DISABLED
 
 
+class PatientNotFoundError(NotFoundError):
+    default_code = ErrorCode.PATIENT_NOT_FOUND
+
+
+class OutOfStockError(ConflictError):
+    default_code = ErrorCode.INVENTORY_OUT_OF_STOCK
+
+
 class AIUnavailableError(AppError):
     http_status = HTTPStatus.SERVICE_UNAVAILABLE
     default_code = ErrorCode.AI_UNAVAILABLE
