@@ -1,3 +1,4 @@
+from decimal import Decimal
 from functools import lru_cache
 from typing import Annotated
 
@@ -24,6 +25,8 @@ class Settings(BaseSettings):
     )
     gemini_api_key: str | None = Field(default=None, alias="GEMINI_API_KEY")
     gemini_model: str | None = Field(default=None, alias="GEMINI_MODEL")
+
+    deposit_percent: Decimal = Field(default=Decimal("0.40"), alias="DEPOSIT_PERCENT")
 
     seed_doctor_email: str | None = Field(default=None, alias="SEED_DOCTOR_EMAIL")
     seed_doctor_password: str | None = Field(default=None, alias="SEED_DOCTOR_PASSWORD")

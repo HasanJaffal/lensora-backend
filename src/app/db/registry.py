@@ -8,7 +8,14 @@ schema is present before diffing.
 from app.db.base import Base
 from app.features.auth.models import User
 from app.features.inventory.models import InventoryItem
-from app.features.lenses.models import LensCoating, LensMaterial, LensTint, LensType
+from app.features.lenses.models import (
+    LensCoating,
+    LensMaterial,
+    LensTint,
+    LensType,
+    Order,
+    OrderItem,
+)
 from app.features.patients.models import (
     LensConfig,
     Patient,
@@ -25,6 +32,8 @@ __all__ = [
     "LensMaterial",
     "LensTint",
     "LensType",
+    "Order",
+    "OrderItem",
     "Patient",
     "PatientNote",
     "Tip",
