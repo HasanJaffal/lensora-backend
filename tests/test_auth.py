@@ -18,10 +18,10 @@ DOCTOR_PASSWORD = "correct-horse"
 def _make_doctor(*, is_active: bool = True) -> User:
     user = User(
         id=uuid.uuid4(),
-        email="doctor@souroptic.com",
+        email="doctor@lensora.com",
         hashed_password=hash_password(DOCTOR_PASSWORD),
-        display_name_en="Dr. Sour Optic",
-        display_name_ar="د. سور أوبتيك",
+        display_name_en="Dr. Jane Doe",
+        display_name_ar="د. جين دو",
         role=UserRole.OPTOMETRIST,
         is_active=is_active,
     )
@@ -97,7 +97,7 @@ async def test_login_with_unknown_email_returns_invalid_credentials(
     client, _ = auth_client
     response = await client.post(
         "/api/v1/auth/login",
-        json={"email": "nobody@souroptic.com", "password": DOCTOR_PASSWORD},
+        json={"email": "nobody@lensora.com", "password": DOCTOR_PASSWORD},
     )
 
     assert response.status_code == 401

@@ -9,7 +9,7 @@ from app.core.config import get_settings
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    app = FastAPI(title="Sour Optic API")
+    app = FastAPI(title="Lensora API")
 
     app.add_middleware(
         CORSMiddleware,

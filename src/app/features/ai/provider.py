@@ -156,7 +156,7 @@ def _first_text(response: "Message") -> str:
 
 def _chat_system_prompt(context: AssistantContext, locale: Locale) -> str:
     lines = [
-        "You are the practice assistant for Sour Optic, an optometry clinic.",
+        "You are the practice assistant for Lensora, an optometry clinic.",
         f"Answer in {'Arabic' if locale is Locale.AR else 'English'} unless asked otherwise.",
         f"Keep answers concise — at most {_MAX_WORDS} words.",
         "Use the practice data below when relevant; do not invent patients or stock.",

@@ -1,7 +1,7 @@
 [project]
-name = "sour-optic-backend"
+name = "lensora-backend"
 version = "0.1.0"
-description = "Sour Optic optometrist practice management platform — backend API"
+description = "Lensora optometrist practice management platform — backend API"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",

@@ -1,6 +1,6 @@
-# Sour Optic — Backend
+# Lensora — Backend
 
-FastAPI backend for the Sour Optic optometrist practice management platform.
+FastAPI backend for the Lensora optometrist practice management platform.
 
 Layered, SOLID architecture: `routers → schemas (DTOs) → services → repositories → models`.
 The app factory, configuration, `/health` endpoint (Task 01), Docker/environment (Task 02), the
@@ -68,11 +68,11 @@ Settings keys: `APP_ENV`, `API_PORT`, `DATABASE_URL`, `POSTGRES_USER`, `POSTGRES
 ## Running with Docker
 
 The backend and a PostgreSQL database run together via docker compose, defined in the parent
-workspace wrapper (`../docker-compose.yml`), which references this repo as `sour-optic-backend/`.
+workspace wrapper (`../docker-compose.yml`), which references this repo as `lensora-backend/`.
 From that wrapper directory:
 
 ```bash
-cp sour-optic-backend/.env.example sour-optic-backend/.env   # first time only
+cp lensora-backend/.env.example lensora-backend/.env   # first time only
 docker compose up --build
 ```
 
@@ -83,9 +83,9 @@ The API is published on `API_PORT` (default `8000`):
 curl http://127.0.0.1:8000/health
 ```
 
-Both services read configuration exclusively from `sour-optic-backend/.env`; nothing is baked into
+Both services read configuration exclusively from `lensora-backend/.env`; nothing is baked into
 the image. To publish on a different host port, run compose with that value exported for
-interpolation, e.g. `docker compose --env-file sour-optic-backend/.env up` after setting `API_PORT`.
+interpolation, e.g. `docker compose --env-file lensora-backend/.env up` after setting `API_PORT`.
 
 ## Developer tasks
 

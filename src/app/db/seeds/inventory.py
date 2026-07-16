@@ -137,17 +137,17 @@ INVENTORY_ITEMS: tuple[InventorySeed, ...] = (
     ),
     # Care accessories
     InventorySeed(
-        category="care", name="Microfiber Cloth", brand="Sour Optic",
+        category="care", name="Microfiber Cloth", brand="Lensora",
         spec="Cleaning cloth", sku="CAR-CLOTH-MF",
         qty=40, threshold=15, price=Decimal("3.00"),
     ),
     InventorySeed(
-        category="care", name="Lens Cleaning Spray 50ml", brand="Sour Optic",
+        category="care", name="Lens Cleaning Spray 50ml", brand="Lensora",
         spec="50ml spray", sku="CAR-SPRAY-50",
         qty=22, threshold=10, price=Decimal("6.00"),
     ),
     InventorySeed(
-        category="care", name="Hard Glasses Case", brand="Sour Optic",
+        category="care", name="Hard Glasses Case", brand="Lensora",
         spec="Protective case", sku="CAR-CASE-HRD",
         qty=0, threshold=6, price=Decimal("5.00"),
     ),
