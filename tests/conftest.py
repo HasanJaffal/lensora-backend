@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator
+from decimal import Decimal
 
 import pytest
 import pytest_asyncio
@@ -13,18 +14,19 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.pool import StaticPool
 
 from app.common.deps import get_current_user, get_uow_sessionmaker
-from app.core.config import get_settings
 from app.db import seed as seed_module
 from app.db.registry import Base
 from app.db.session import get_session
 from app.features.auth.models import User
-from app.features.lenses.models import (
-    LensCoating,
-    LensMaterial,
-    LensTint,
-    LensType,
+from app.features.auth.repository import UserRepository
+from app.features.organizations.repository import OrganizationRepository
+from app.features.organizations.service import (
+    OrganizationProvisioningRequest,
+    OrganizationProvisioningService,
 )
 from app.main import create_app
+
+TEST_ADMIN_PASSWORD = "correct-horse"
 
 
 @pytest.fixture
@@ -39,16 +41,30 @@ async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
         yield async_client
 
 
+async def _provision_test_organization(session: AsyncSession) -> User:
+    service = OrganizationProvisioningService(
+        session, OrganizationRepository(session), UserRepository(session)
+    )
+    provisioned = await service.provision(
+        OrganizationProvisioningRequest(
+            organization_name="Test Optometry",
+            organization_slug="test-optometry",
+            admin_email="admin@lensora.test",
+            admin_password=TEST_ADMIN_PASSWORD,
+            admin_display_name_en="Dr. Jane Doe",
+            admin_display_name_ar="د. جين دو",
+            deposit_percent=Decimal("0.40"),
+        )
+    )
+    return provisioned.admin_account
+
+
 async def _seed_test_db(sessionmaker: async_sessionmaker[AsyncSession]) -> None:
-    settings = get_settings()
     async with sessionmaker() as session, session.begin():
-        await seed_module._seed_doctor(session, settings)
-        await seed_module._seed_lens_options(session, LensType, seed_module.LENS_TYPES)
-        await seed_module._seed_lens_options(session, LensMaterial, seed_module.LENS_MATERIALS)
-        await seed_module._seed_lens_options(session, LensCoating, seed_module.LENS_COATINGS)
-        await seed_module._seed_lens_options(session, LensTint, seed_module.LENS_TINTS)
+        await _provision_test_organization(session)
+        await seed_module.seed_lens_catalog(session)
+        await seed_module.seed_tips(session)
         await seed_module._seed_inventory(session)
-        await seed_module._seed_tips(session)
         await seed_module._seed_patients(session)
 
 
@@ -75,7 +91,7 @@ async def db_sessionmaker() -> AsyncIterator[async_sessionmaker[AsyncSession]]:
 
 
 @pytest_asyncio.fixture
-async def seeded_doctor(db_sessionmaker: async_sessionmaker[AsyncSession]) -> User:
+async def seeded_admin(db_sessionmaker: async_sessionmaker[AsyncSession]) -> User:
     async with db_sessionmaker() as session:
         result = await session.execute(select(User).limit(1))
         return result.scalar_one()
@@ -84,7 +100,7 @@ async def seeded_doctor(db_sessionmaker: async_sessionmaker[AsyncSession]) -> Us
 @pytest_asyncio.fixture
 async def api_client(
     db_sessionmaker: async_sessionmaker[AsyncSession],
-    seeded_doctor: User,
+    seeded_admin: User,
 ) -> AsyncIterator[AsyncClient]:
     """Authenticated client wired to the isolated in-memory database."""
     app = create_app()
@@ -99,7 +115,7 @@ async def api_client(
 
     app.dependency_overrides[get_session] = override_get_session
     app.dependency_overrides[get_uow_sessionmaker] = lambda: db_sessionmaker
-    app.dependency_overrides[get_current_user] = lambda: seeded_doctor
+    app.dependency_overrides[get_current_user] = lambda: seeded_admin
 
     transport = ASGITransport(app=app, raise_app_exceptions=False)
     async with AsyncClient(transport=transport, base_url="http://test") as async_client:

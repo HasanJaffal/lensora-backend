@@ -68,6 +68,14 @@ class OutOfStockError(ConflictError):
     default_code = ErrorCode.INVENTORY_OUT_OF_STOCK
 
 
+class OrganizationSlugTakenError(ConflictError):
+    default_code = ErrorCode.ORGANIZATION_SLUG_TAKEN
+
+
+class AccountEmailTakenError(ConflictError):
+    default_code = ErrorCode.AUTH_EMAIL_TAKEN
+
+
 class UnsupportedMediaTypeError(AppError):
     http_status = HTTPStatus.UNSUPPORTED_MEDIA_TYPE
     default_code = ErrorCode.IMPORT_UNSUPPORTED_TYPE

@@ -29,15 +29,6 @@ class Settings(BaseSettings):
 
     deposit_percent: Decimal = Field(default=Decimal("0.40"), alias="DEPOSIT_PERCENT")
 
-    seed_doctor_email: str | None = Field(default=None, alias="SEED_DOCTOR_EMAIL")
-    seed_doctor_password: str | None = Field(default=None, alias="SEED_DOCTOR_PASSWORD")
-    seed_doctor_display_name_en: str | None = Field(
-        default=None, alias="SEED_DOCTOR_DISPLAY_NAME_EN"
-    )
-    seed_doctor_display_name_ar: str | None = Field(
-        default=None, alias="SEED_DOCTOR_DISPLAY_NAME_AR"
-    )
-
     @field_validator("cors_origins", mode="before")
     @classmethod
     def split_cors_origins(cls, value: object) -> object:

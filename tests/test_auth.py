@@ -18,11 +18,12 @@ DOCTOR_PASSWORD = "correct-horse"
 def _make_doctor(*, is_active: bool = True) -> User:
     user = User(
         id=uuid.uuid4(),
+        organization_id=uuid.uuid4(),
         email="doctor@lensora.com",
         hashed_password=hash_password(DOCTOR_PASSWORD),
         display_name_en="Dr. Jane Doe",
         display_name_ar="د. جين دو",
-        role=UserRole.OPTOMETRIST,
+        role=UserRole.ORGANIZATION_ADMIN,
         is_active=is_active,
     )
     return user
@@ -75,7 +76,7 @@ async def test_login_returns_token_and_user(
     assert body["data"]["accessToken"]
     assert body["data"]["user"]["email"] == doctor.email
     assert body["data"]["user"]["displayNameAr"] == doctor.display_name_ar
-    assert body["data"]["user"]["role"] == "optometrist"
+    assert body["data"]["user"]["role"] == "organizationAdmin"
 
 
 async def test_login_with_wrong_password_returns_invalid_credentials(

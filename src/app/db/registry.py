@@ -18,6 +18,7 @@ from app.features.lenses.models import (
     Order,
     OrderItem,
 )
+from app.features.organizations.models import Organization
 from app.features.patients.models import (
     LensConfig,
     Patient,
@@ -38,6 +39,7 @@ __all__ = [
     "LensType",
     "Order",
     "OrderItem",
+    "Organization",
     "Patient",
     "PatientNote",
     "Tip",

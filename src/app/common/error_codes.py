@@ -19,6 +19,10 @@ class ErrorCode(StrEnum):
     AUTH_UNAUTHORIZED = "auth.unauthorized"
     AUTH_SESSION_EXPIRED = "auth.sessionExpired"
     AUTH_ACCOUNT_DISABLED = "auth.accountDisabled"
+    AUTH_EMAIL_TAKEN = "auth.emailTaken"
+
+    # Organizations
+    ORGANIZATION_SLUG_TAKEN = "organization.slugTaken"
 
     # Patients
     PATIENT_NOT_FOUND = "patient.notFound"
