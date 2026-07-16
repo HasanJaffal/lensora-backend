@@ -24,6 +24,9 @@ class ErrorCode(StrEnum):
     # Organizations
     ORGANIZATION_SLUG_TAKEN = "organization.slugTaken"
 
+    # Tenancy
+    TENANT_FORBIDDEN = "tenant.forbidden"
+
     # Patients
     PATIENT_NOT_FOUND = "patient.notFound"
 

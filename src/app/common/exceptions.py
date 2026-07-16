@@ -72,6 +72,13 @@ class OrganizationSlugTakenError(ConflictError):
     default_code = ErrorCode.ORGANIZATION_SLUG_TAKEN
 
 
+class TenantContextMissingError(AppError):
+    """Raised when code that requires tenant scoping runs with no ``TenantContext`` set."""
+
+    http_status = HTTPStatus.FORBIDDEN
+    default_code = ErrorCode.TENANT_FORBIDDEN
+
+
 class AccountEmailTakenError(ConflictError):
     default_code = ErrorCode.AUTH_EMAIL_TAKEN
 

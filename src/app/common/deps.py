@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from typing import Annotated
 
 from fastapi import Depends
@@ -5,9 +6,10 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.common.exceptions import SessionExpiredError
+from app.common.tenant_context import TenantContext, tenant_context
 from app.db.engine import get_sessionmaker
 from app.db.session import get_session
-from app.features.auth.models import User
+from app.features.auth.models import User, UserRole
 from app.features.auth.repository import UserRepository
 from app.features.auth.service import AuthService
 
@@ -48,3 +50,17 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 
 async def require_auth(_: CurrentUser) -> None:
     """Router-level guard: use in ``APIRouter(dependencies=[Depends(require_auth)])``."""
+
+
+def get_tenant_context(current_user: CurrentUser) -> Iterator[TenantContext]:
+    """Bind a ``TenantContext`` derived from the authenticated account for the request lifetime."""
+    ctx = TenantContext(
+        organization_id=current_user.organization_id,
+        user_id=current_user.id,
+        role=UserRole(current_user.role),
+    )
+    with tenant_context(ctx):
+        yield ctx
+
+
+TenantContextDep = Annotated[TenantContext, Depends(get_tenant_context)]
