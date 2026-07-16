@@ -4,7 +4,7 @@ from decimal import Decimal
 from sqlalchemy import ForeignKey, Integer, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base, TenantEntity, TenantMixin, UuidPrimaryKeyMixin
+from app.db.base import TenantEntity
 
 
 class LensOptionMixin:
@@ -82,7 +82,7 @@ class Order(TenantEntity):
     )
 
 
-class OrderItem(Base, UuidPrimaryKeyMixin, TenantMixin):
+class OrderItem(TenantEntity):
     __tablename__ = "order_items"
 
     order_id: Mapped[uuid.UUID] = mapped_column(

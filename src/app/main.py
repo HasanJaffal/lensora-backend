@@ -5,6 +5,7 @@ from app.api.health import router as health_router
 from app.api.v1.router import api_router
 from app.common.handlers import register_exception_handlers
 from app.core.config import get_settings
+from app.db import registry as db_registry  # noqa: F401 - import registers audit listeners
 
 
 def create_app() -> FastAPI:

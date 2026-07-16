@@ -4,14 +4,14 @@ from enum import StrEnum
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import Base, TimestampMixin, UuidPrimaryKeyMixin
+from app.db.base import Entity
 
 
 class UserRole(StrEnum):
     ORGANIZATION_ADMIN = "organizationAdmin"
 
 
-class User(Base, UuidPrimaryKeyMixin, TimestampMixin):
+class User(Entity):
     __tablename__ = "user_account"
 
     organization_id: Mapped[uuid.UUID] = mapped_column(

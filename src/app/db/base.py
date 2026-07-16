@@ -34,10 +34,27 @@ class TenantMixin:
     organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organization.id"), index=True)
 
 
-class TenantEntity(Base, UuidPrimaryKeyMixin, TimestampMixin, TenantMixin):
-    """Convenience base for tenant-owned models: Uuid + Timestamp + Tenant.
+class AuditMixin:
+    """Adds actor-tracking columns, auto-populated by the listeners in ``app.db.audit``.
 
-    Not yet applied to feature models — wiring happens when scoping is enforced.
+    Nullable because CLI/seed/system inserts run with no authenticated actor bound.
     """
+
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("user_account.id"), default=None
+    )
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("user_account.id"), default=None
+    )
+
+
+class Entity(Base, UuidPrimaryKeyMixin, TimestampMixin, AuditMixin):
+    """Convenience base for global models: Uuid + Timestamp + Audit."""
+
+    __abstract__ = True
+
+
+class TenantEntity(Base, UuidPrimaryKeyMixin, TimestampMixin, AuditMixin, TenantMixin):
+    """Convenience base for tenant-owned models: Uuid + Timestamp + Audit + Tenant."""
 
     __abstract__ = True

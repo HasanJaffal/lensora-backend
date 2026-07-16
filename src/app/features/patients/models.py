@@ -1,23 +1,21 @@
 import uuid
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
 from enum import StrEnum
 
 from sqlalchemy import (
     JSON,
     Date,
-    DateTime,
     ForeignKey,
     Index,
     Integer,
     Numeric,
     String,
     UniqueConstraint,
-    func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base, TenantEntity, TenantMixin, UuidPrimaryKeyMixin
+from app.db.base import TenantEntity
 
 
 class PatientStatus(StrEnum):
@@ -80,7 +78,7 @@ class Patient(TenantEntity):
     )
 
 
-class PatientNote(Base, UuidPrimaryKeyMixin, TenantMixin):
+class PatientNote(TenantEntity):
     __tablename__ = "patient_notes"
 
     patient_id: Mapped[uuid.UUID] = mapped_column(
@@ -88,12 +86,11 @@ class PatientNote(Base, UuidPrimaryKeyMixin, TenantMixin):
     )
     en: Mapped[str] = mapped_column(String(1000))
     ar: Mapped[str] = mapped_column(String(1000))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     patient: Mapped["Patient"] = relationship(back_populates="notes")
 
 
-class VisitHistory(Base, UuidPrimaryKeyMixin, TenantMixin):
+class VisitHistory(TenantEntity):
     __tablename__ = "visit_history"
 
     patient_id: Mapped[uuid.UUID] = mapped_column(

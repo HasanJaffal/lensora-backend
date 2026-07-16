@@ -15,6 +15,7 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.exceptions import AppError, NotFoundError
+from app.db import registry as db_registry  # noqa: F401 - import registers audit listeners
 from app.db.engine import get_sessionmaker
 from app.db.seeds import INVENTORY_ITEMS, PATIENTS
 from app.db.seeds.organization_defaults import seed_lens_catalog, seed_tips

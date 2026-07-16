@@ -21,6 +21,7 @@ from decimal import Decimal, InvalidOperation
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.common.exceptions import AppError
+from app.db import registry as db_registry  # noqa: F401 - import registers audit listeners
 from app.db.engine import get_sessionmaker
 from app.db.seeds.organization_defaults import seed_lens_catalog, seed_tips
 from app.features.auth.repository import UserRepository

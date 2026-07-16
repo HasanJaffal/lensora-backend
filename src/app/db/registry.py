@@ -5,6 +5,7 @@ are added here as they are implemented; ``migrations/env.py`` imports this modul
 schema is present before diffing.
 """
 
+from app.db.audit import register_audit_listeners
 from app.db.base import Base
 from app.features.auth.models import User
 from app.features.import_forms.models import ImportForm
@@ -26,6 +27,8 @@ from app.features.patients.models import (
     VisitHistory,
 )
 from app.features.tips.models import Tip
+
+register_audit_listeners()
 
 __all__ = [
     "Base",
