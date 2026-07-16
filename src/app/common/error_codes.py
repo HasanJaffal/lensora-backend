@@ -26,5 +26,9 @@ class ErrorCode(StrEnum):
     # Inventory
     INVENTORY_OUT_OF_STOCK = "inventory.outOfStock"
 
+    # Import
+    IMPORT_FILE_TOO_LARGE = "import.fileTooLarge"
+    IMPORT_UNSUPPORTED_TYPE = "import.unsupportedType"
+
     # AI
     AI_UNAVAILABLE = "ai.unavailable"

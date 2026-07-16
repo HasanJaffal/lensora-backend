@@ -7,6 +7,7 @@ schema is present before diffing.
 
 from app.db.base import Base
 from app.features.auth.models import User
+from app.features.import_forms.models import ImportForm
 from app.features.intake.models import IntakeSubmission
 from app.features.inventory.models import InventoryItem
 from app.features.lenses.models import (
@@ -27,6 +28,7 @@ from app.features.tips.models import Tip
 
 __all__ = [
     "Base",
+    "ImportForm",
     "IntakeSubmission",
     "InventoryItem",
     "LensCoating",
