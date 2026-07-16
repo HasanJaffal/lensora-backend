@@ -1,6 +1,8 @@
 import uuid
+from datetime import datetime
+from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -81,3 +83,11 @@ class OrderRepository:
             .limit(1)
         )
         return result.scalar_one_or_none()
+
+    async def total_revenue_since(self, since: datetime) -> Decimal:
+        total = await self._session.scalar(
+            select(func.coalesce(func.sum(Order.total), 0)).where(
+                Order.created_at >= since
+            )
+        )
+        return Decimal(str(total))
