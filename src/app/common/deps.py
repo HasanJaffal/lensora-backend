@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import AsyncIterator
 from typing import Annotated
 
 from fastapi import Depends
@@ -52,8 +52,14 @@ async def require_auth(_: CurrentUser) -> None:
     """Router-level guard: use in ``APIRouter(dependencies=[Depends(require_auth)])``."""
 
 
-def get_tenant_context(current_user: CurrentUser) -> Iterator[TenantContext]:
-    """Bind a ``TenantContext`` derived from the authenticated account for the request lifetime."""
+async def get_tenant_context(current_user: CurrentUser) -> AsyncIterator[TenantContext]:
+    """Bind a ``TenantContext`` derived from the authenticated account for the request lifetime.
+
+    Must be an async generator: FastAPI runs sync dependencies in a threadpool, where each
+    call into the generator can land on a different thread and break ``ContextVar`` token
+    reset (tokens are bound to the context that created them). Async dependencies instead
+    run on the event loop task, keeping the whole generator in one consistent context.
+    """
     ctx = TenantContext(
         organization_id=current_user.organization_id,
         user_id=current_user.id,

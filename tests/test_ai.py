@@ -61,9 +61,7 @@ async def test_chat_returns_fallback_response(api_client: AsyncClient) -> None:
 
 
 async def test_chat_requires_at_least_one_message(api_client: AsyncClient) -> None:
-    response = await api_client.post(
-        "/api/v1/ai/chat", json={"messages": [], "locale": "en"}
-    )
+    response = await api_client.post("/api/v1/ai/chat", json={"messages": [], "locale": "en"})
 
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "validation.error"

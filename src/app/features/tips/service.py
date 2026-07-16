@@ -33,9 +33,7 @@ class TipService:
         matched = select_matched_tips(tips, patient.tags, limit=MAX_MATCHED_TIPS)
         return [TipDto.from_model(tip) for tip in matched]
 
-    async def send_tip(
-        self, tip_id: uuid.UUID, patient_id: uuid.UUID
-    ) -> SendTipResultDto:
+    async def send_tip(self, tip_id: uuid.UUID, patient_id: uuid.UUID) -> SendTipResultDto:
         tip = await self._tips.get_by_id(tip_id)
         if tip is None:
             raise NotFoundError(f"Tip {tip_id} not found")

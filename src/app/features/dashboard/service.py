@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.common.tenant_context import TenantContext
 from app.features.auth.models import User
 from app.features.dashboard.schemas import (
     DashboardKpisDto,
@@ -37,10 +38,10 @@ _REASON_BY_STATUS: dict[str, str] = {
 class DashboardService:
     """Read-only aggregation for the dashboard, composing the other features (FR-DASH)."""
 
-    def __init__(self, session: AsyncSession) -> None:
-        self._patients = PatientRepository(session)
-        self._inventory = InventoryRepository(session)
-        self._orders = OrderRepository(session)
+    def __init__(self, session: AsyncSession, tenant_context: TenantContext) -> None:
+        self._patients = PatientRepository(session, tenant_context)
+        self._inventory = InventoryRepository(session, tenant_context)
+        self._orders = OrderRepository(session, tenant_context)
 
     async def get_summary(self, doctor: User) -> DashboardSummaryDto:
         patients, _ = await self._patients.list_page(
@@ -60,9 +61,7 @@ class DashboardService:
 
         return DashboardSummaryDto(
             kpis=DashboardKpisDto(
-                appointments_today=KpiDto(
-                    value=Decimal(len(schedule)), delta=f"+{active_count}"
-                ),
+                appointments_today=KpiDto(value=Decimal(len(schedule)), delta=f"+{active_count}"),
                 orders_in_lab=KpiDto(value=Decimal(lab_count), delta=f"+{lab_count}"),
                 stock_alerts=KpiDto(value=Decimal(len(low_stock)), delta=f"+{out_count}"),
                 revenue_this_month=KpiDto(value=revenue, delta=""),

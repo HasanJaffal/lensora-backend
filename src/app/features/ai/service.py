@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.envelope import ErrorDetail
 from app.common.exceptions import PatientNotFoundError, ValidationError
+from app.common.tenant_context import TenantContext
 from app.features.ai.context import (
     AssistantContext,
     FrameSummary,
@@ -44,15 +45,18 @@ class AIService:
     """Grounded chat and styling advice with a deterministic fallback (NFR-4 / FR-AI)."""
 
     def __init__(
-        self, session: AsyncSession, provider: AIProvider, fallback: FallbackProvider
+        self,
+        session: AsyncSession,
+        tenant_context: TenantContext,
+        provider: AIProvider,
+        fallback: FallbackProvider,
     ) -> None:
         self._session = session
+        self._tenant_context = tenant_context
         self._provider = provider
         self._fallback = fallback
 
-    async def chat(
-        self, messages: list[ChatMessage], locale: Locale
-    ) -> ChatResponseDto:
+    async def chat(self, messages: list[ChatMessage], locale: Locale) -> ChatResponseDto:
         context = await self._assemble_context()
         try:
             content = await self._provider.chat(messages, context, locale)
@@ -79,8 +83,8 @@ class AIService:
         return StylingAdviceDto(tips=tips, used_fallback=used_fallback)
 
     async def _assemble_context(self) -> AssistantContext:
-        patients = PatientRepository(self._session)
-        inventory = InventoryRepository(self._session)
+        patients = PatientRepository(self._session, self._tenant_context)
+        inventory = InventoryRepository(self._session, self._tenant_context)
         records, _ = await patients.list_page(
             status=None, query=None, offset=0, limit=_MAX_CONTEXT_PATIENTS
         )
@@ -98,10 +102,8 @@ class AIService:
             ],
         )
 
-    async def _assemble_styling_context(
-        self, request: StylingAdviceRequest
-    ) -> StylingContext:
-        inventory = InventoryRepository(self._session)
+    async def _assemble_styling_context(self, request: StylingAdviceRequest) -> StylingContext:
+        inventory = InventoryRepository(self._session, self._tenant_context)
         frame = await inventory.get_by_id(request.frame_id)
         if frame is None:
             raise ValidationError(
@@ -111,7 +113,9 @@ class AIService:
 
         diagnosis: str | None = None
         if request.patient_id is not None:
-            patient = await PatientRepository(self._session).get_by_id(request.patient_id)
+            patient = await PatientRepository(self._session, self._tenant_context).get_by_id(
+                request.patient_id
+            )
             if patient is None:
                 raise PatientNotFoundError(f"Patient {request.patient_id} not found")
             diagnosis = patient.diagnosis_en

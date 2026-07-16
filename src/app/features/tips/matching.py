@@ -17,10 +17,7 @@ def select_matched_tips(
     the catalog order. Pure and deterministic for unit testing.
     """
     wanted = set(patient_tags)
-    scored = [
-        (len(wanted.intersection(tip.tags)), index, tip)
-        for index, tip in enumerate(tips)
-    ]
+    scored = [(len(wanted.intersection(tip.tags)), index, tip) for index, tip in enumerate(tips)]
     matches = [entry for entry in scored if entry[0] > 0]
     matches.sort(key=lambda entry: (-entry[0], entry[1]))
     return [tip for _, _, tip in matches[:limit]]

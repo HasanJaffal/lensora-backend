@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
-from app.common.deps import SessionDep, require_auth
+from app.common.deps import SessionDep, TenantContextDep, require_auth
 from app.common.envelope import Envelope, ok
 from app.features.ai.deps import get_ai_provider, get_fallback_provider
 from app.features.ai.schemas import (
@@ -18,8 +18,8 @@ from app.features.ai.service import AIService
 router = APIRouter(prefix="/ai", tags=["ai"], dependencies=[Depends(require_auth)])
 
 
-def get_ai_service(session: SessionDep) -> AIService:
-    return AIService(session, get_ai_provider(), get_fallback_provider())
+def get_ai_service(session: SessionDep, tenant_context: TenantContextDep) -> AIService:
+    return AIService(session, tenant_context, get_ai_provider(), get_fallback_provider())
 
 
 AIServiceDep = Annotated[AIService, Depends(get_ai_service)]

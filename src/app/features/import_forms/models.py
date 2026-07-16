@@ -4,7 +4,7 @@ from typing import Any
 from sqlalchemy import JSON, Boolean, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import Base, TimestampMixin, UuidPrimaryKeyMixin
+from app.db.base import TenantEntity
 
 
 class ImportStatus(StrEnum):
@@ -13,7 +13,7 @@ class ImportStatus(StrEnum):
     FAILED = "failed"
 
 
-class ImportForm(Base, UuidPrimaryKeyMixin, TimestampMixin):
+class ImportForm(TenantEntity):
     """Result of extracting questions from an uploaded paper form (FR-IMP).
 
     Only the extracted questions are persisted — never the uploaded document itself

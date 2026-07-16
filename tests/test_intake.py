@@ -134,18 +134,14 @@ async def test_completing_incomplete_draft_is_rejected(api_client: AsyncClient) 
     )
     intake_id = created.json()["data"]["id"]
 
-    response = await api_client.patch(
-        f"/api/v1/intake/{intake_id}", json={"status": "completed"}
-    )
+    response = await api_client.patch(f"/api/v1/intake/{intake_id}", json={"status": "completed"})
 
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "validation.error"
 
 
 async def test_get_unknown_intake_returns_not_found(api_client: AsyncClient) -> None:
-    response = await api_client.get(
-        "/api/v1/intake/00000000-0000-0000-0000-000000000000"
-    )
+    response = await api_client.get("/api/v1/intake/00000000-0000-0000-0000-000000000000")
 
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "resource.notFound"

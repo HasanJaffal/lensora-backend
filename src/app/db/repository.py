@@ -24,18 +24,14 @@ class TenantScopedRepository:
 
     def scoped_select(self, model: type[ModelT]) -> Select[tuple[ModelT]]:
         """A `select(model)` pre-filtered to the current tenant."""
-        return select(model).where(
-            model.organization_id == self._tenant_context.organization_id
-        )
+        return select(model).where(model.organization_id == self._tenant_context.organization_id)
 
     async def get_scoped(self, model: type[ModelT], entity_id: uuid.UUID) -> ModelT | None:
         """Scoped replacement for `session.get(model, entity_id)`.
 
         Returns `None` if the row does not exist or belongs to another organization.
         """
-        result = await self._session.execute(
-            self.scoped_select(model).where(model.id == entity_id)
-        )
+        result = await self._session.execute(self.scoped_select(model).where(model.id == entity_id))
         return result.scalar_one_or_none()
 
     def add_scoped(self, entity: ModelT) -> None:

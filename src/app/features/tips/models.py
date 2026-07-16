@@ -1,9 +1,9 @@
 from enum import StrEnum
 
-from sqlalchemy import JSON, String
+from sqlalchemy import JSON, Index, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import Base, TimestampMixin, UuidPrimaryKeyMixin
+from app.db.base import TenantEntity
 
 
 class TipCategory(StrEnum):
@@ -14,10 +14,14 @@ class TipCategory(StrEnum):
     SUN_UV = "sunUv"
 
 
-class Tip(Base, UuidPrimaryKeyMixin, TimestampMixin):
+class Tip(TenantEntity):
     __tablename__ = "tips"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "title_en", name="uq_tips_organization_id_title_en"),
+        Index("ix_tips_organization_id_category", "organization_id", "category"),
+    )
 
-    category: Mapped[str] = mapped_column(String(20), index=True)
+    category: Mapped[str] = mapped_column(String(20))
     tags: Mapped[list[str]] = mapped_column(JSON, default=list)
     icon: Mapped[str] = mapped_column(String(50))
     color: Mapped[str] = mapped_column(String(50))

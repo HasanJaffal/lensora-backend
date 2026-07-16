@@ -4,13 +4,16 @@ from sqlalchemy import Select, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.common.tenant_context import TenantContext
+from app.db.repository import TenantScopedRepository
 from app.features.patients.models import LensConfig, Patient, PatientStatus
 
 
-class PatientRepository:
+class PatientRepository(TenantScopedRepository):
     """Data access for patient records. No business rules live here."""
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, tenant_context: TenantContext) -> None:
+        super().__init__(session, tenant_context)
         self._session = session
 
     def _apply_filters(
@@ -43,7 +46,7 @@ class PatientRepository:
         offset: int,
         limit: int,
     ) -> tuple[list[Patient], int]:
-        base = self._apply_filters(select(Patient), status=status, query=query)
+        base = self._apply_filters(self.scoped_select(Patient), status=status, query=query)
         total = await self._session.scalar(
             select(func.count()).select_from(base.order_by(None).subquery())
         )
@@ -57,7 +60,7 @@ class PatientRepository:
 
     async def get_by_id(self, patient_id: uuid.UUID) -> Patient | None:
         result = await self._session.execute(
-            select(Patient)
+            self.scoped_select(Patient)
             .where(Patient.id == patient_id)
             .options(
                 selectinload(Patient.notes),
@@ -68,7 +71,7 @@ class PatientRepository:
         return result.scalar_one_or_none()
 
     def add(self, patient: Patient) -> None:
-        self._session.add(patient)
+        self.add_scoped(patient)
 
     async def flush(self) -> None:
         await self._session.flush()
@@ -77,6 +80,4 @@ class PatientRepository:
         await self._session.commit()
 
     async def refresh(self, patient: Patient) -> None:
-        await self._session.refresh(
-            patient, attribute_names=["notes", "visits", "lens_config"]
-        )
+        await self._session.refresh(patient, attribute_names=["notes", "visits", "lens_config"])

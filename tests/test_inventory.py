@@ -96,9 +96,7 @@ async def test_frames_in_stock_excludes_out_of_stock(api_client: AsyncClient) ->
 
 
 async def test_frames_use_switches_catalog_to_sunglasses(api_client: AsyncClient) -> None:
-    response = await api_client.get(
-        "/api/v1/inventory/frames", params={"use": "sunglasses"}
-    )
+    response = await api_client.get("/api/v1/inventory/frames", params={"use": "sunglasses"})
 
     assert response.status_code == 200
     assert all(frame["category"] == "sun" for frame in response.json()["data"])
@@ -108,9 +106,7 @@ async def test_patch_updates_qty_and_recomputes_status(api_client: AsyncClient) 
     listing = await api_client.get("/api/v1/inventory", params={"category": "frame"})
     item = next(i for i in listing.json()["data"] if i["qty"] > i["threshold"])
 
-    response = await api_client.patch(
-        f"/api/v1/inventory/{item['id']}", json={"qty": 0}
-    )
+    response = await api_client.patch(f"/api/v1/inventory/{item['id']}", json={"qty": 0})
 
     assert response.status_code == 200
     data = response.json()["data"]
@@ -119,9 +115,7 @@ async def test_patch_updates_qty_and_recomputes_status(api_client: AsyncClient) 
 
 
 async def test_get_unknown_item_returns_not_found(api_client: AsyncClient) -> None:
-    response = await api_client.get(
-        "/api/v1/inventory/00000000-0000-0000-0000-000000000000"
-    )
+    response = await api_client.get("/api/v1/inventory/00000000-0000-0000-0000-000000000000")
 
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "resource.notFound"

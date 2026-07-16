@@ -7,6 +7,7 @@ from app.common.exceptions import (
     PayloadTooLargeError,
     UnsupportedMediaTypeError,
 )
+from app.common.tenant_context import TenantContext
 from app.features.ai.provider import AIProvider, ExtractedQuestion, FallbackProvider
 from app.features.import_forms.models import ImportForm, ImportStatus
 from app.features.import_forms.repository import ImportRepository
@@ -17,9 +18,7 @@ from app.features.import_forms.schemas import (
 )
 
 MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024
-_ALLOWED_CONTENT_TYPES = frozenset(
-    {"application/pdf", "image/jpeg", "image/png"}
-)
+_ALLOWED_CONTENT_TYPES = frozenset({"application/pdf", "image/jpeg", "image/png"})
 
 
 class ImportService:
@@ -28,16 +27,16 @@ class ImportService:
     def __init__(
         self,
         session: AsyncSession,
+        tenant_context: TenantContext,
         provider: AIProvider,
         fallback: FallbackProvider,
     ) -> None:
         self._session = session
+        self._tenant_context = tenant_context
         self._provider = provider
         self._fallback = fallback
 
-    async def create_import(
-        self, *, filename: str, content_type: str, data: bytes
-    ) -> ImportDto:
+    async def create_import(self, *, filename: str, content_type: str, data: bytes) -> ImportDto:
         if content_type not in _ALLOWED_CONTENT_TYPES:
             raise UnsupportedMediaTypeError(
                 f"Unsupported file type '{content_type}'; expected PDF, JPEG, or PNG"
@@ -53,7 +52,7 @@ class ImportService:
             questions=[_to_dict(q) for q in questions],
             used_fallback=used_fallback,
         )
-        repository = ImportRepository(self._session)
+        repository = ImportRepository(self._session, self._tenant_context)
         repository.add(record)
         await repository.commit()
         await repository.refresh(record)
@@ -79,15 +78,13 @@ class ImportService:
         self, data: bytes, filename: str, content_type: str
     ) -> tuple[list[ExtractedQuestion], bool]:
         try:
-            questions = await self._provider.extract_questions(
-                data, filename, content_type
-            )
+            questions = await self._provider.extract_questions(data, filename, content_type)
             return questions, isinstance(self._provider, FallbackProvider)
         except Exception:
             return await self._fallback.extract_questions(data, filename, content_type), True
 
     async def _require_import(self, import_id: uuid.UUID) -> ImportForm:
-        record = await ImportRepository(self._session).get_by_id(import_id)
+        record = await ImportRepository(self._session, self._tenant_context).get_by_id(import_id)
         if record is None:
             raise NotFoundError(f"Import {import_id} not found")
         return record

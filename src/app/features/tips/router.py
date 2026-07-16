@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
-from app.common.deps import SessionDep, require_auth
+from app.common.deps import SessionDep, TenantContextDep, require_auth
 from app.common.envelope import Envelope, ok
 from app.common.exceptions import ValidationError
 from app.features.patients.repository import PatientRepository
@@ -15,8 +15,10 @@ from app.features.tips.service import TipService
 router = APIRouter(prefix="/tips", tags=["tips"], dependencies=[Depends(require_auth)])
 
 
-def get_tip_service(session: SessionDep) -> TipService:
-    return TipService(TipRepository(session), PatientRepository(session))
+def get_tip_service(session: SessionDep, tenant_context: TenantContextDep) -> TipService:
+    return TipService(
+        TipRepository(session, tenant_context), PatientRepository(session, tenant_context)
+    )
 
 
 TipServiceDep = Annotated[TipService, Depends(get_tip_service)]
@@ -29,9 +31,7 @@ def _parse_category(category: str | None) -> TipCategory | None:
         return TipCategory(category)
     except ValueError as exc:
         allowed = ", ".join(member.value for member in TipCategory)
-        raise ValidationError(
-            f"Unknown category '{category}'; expected one of: {allowed}"
-        ) from exc
+        raise ValidationError(f"Unknown category '{category}'; expected one of: {allowed}") from exc
 
 
 @router.get("")

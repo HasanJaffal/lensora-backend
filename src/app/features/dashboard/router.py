@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from app.common.deps import CurrentUser, SessionDep
+from app.common.deps import CurrentUser, SessionDep, TenantContextDep
 from app.common.envelope import Envelope, ok
 from app.features.dashboard.schemas import DashboardSummaryDto
 from app.features.dashboard.service import DashboardService
@@ -10,8 +10,10 @@ from app.features.dashboard.service import DashboardService
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 
-def get_dashboard_service(session: SessionDep) -> DashboardService:
-    return DashboardService(session)
+def get_dashboard_service(
+    session: SessionDep, tenant_context: TenantContextDep
+) -> DashboardService:
+    return DashboardService(session, tenant_context)
 
 
 DashboardServiceDep = Annotated[DashboardService, Depends(get_dashboard_service)]

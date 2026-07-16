@@ -1,21 +1,24 @@
 import uuid
 
-from sqlalchemy import Select, or_, select
+from sqlalchemy import Select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.common.tenant_context import TenantContext
+from app.db.repository import TenantScopedRepository
 from app.features.inventory.models import InventoryCategory, InventoryItem
 
 
-class InventoryRepository:
+class InventoryRepository(TenantScopedRepository):
     """Data access for inventory items. No status derivation or business rules here."""
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, tenant_context: TenantContext) -> None:
+        super().__init__(session, tenant_context)
         self._session = session
 
     def _base_query(
         self, *, category: InventoryCategory | None, low_stock: bool
     ) -> Select[tuple[InventoryItem]]:
-        statement = select(InventoryItem)
+        statement = self.scoped_select(InventoryItem)
         if category is not None:
             statement = statement.where(InventoryItem.category == category)
         if low_stock:
@@ -31,14 +34,14 @@ class InventoryRepository:
         return list(result.scalars().all())
 
     async def list_all(self) -> list[InventoryItem]:
-        result = await self._session.execute(select(InventoryItem))
+        result = await self._session.execute(self.scoped_select(InventoryItem))
         return list(result.scalars().all())
 
     async def list_in_stock_by_categories(
         self, categories: tuple[InventoryCategory, ...]
     ) -> list[InventoryItem]:
         result = await self._session.execute(
-            select(InventoryItem)
+            self.scoped_select(InventoryItem)
             .where(
                 or_(*(InventoryItem.category == category for category in categories)),
                 InventoryItem.quantity > 0,
@@ -48,7 +51,7 @@ class InventoryRepository:
         return list(result.scalars().all())
 
     async def get_by_id(self, item_id: uuid.UUID) -> InventoryItem | None:
-        return await self._session.get(InventoryItem, item_id)
+        return await self.get_scoped(InventoryItem, item_id)
 
     async def commit(self) -> None:
         await self._session.commit()

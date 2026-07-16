@@ -8,14 +8,16 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base, TimestampMixin, UuidPrimaryKeyMixin
+from app.db.base import Base, TenantEntity, TenantMixin, UuidPrimaryKeyMixin
 
 
 class PatientStatus(StrEnum):
@@ -24,8 +26,14 @@ class PatientStatus(StrEnum):
     ACTIVE = "active"
 
 
-class Patient(Base, UuidPrimaryKeyMixin, TimestampMixin):
+class Patient(TenantEntity):
     __tablename__ = "patients"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id", "rx_number", name="uq_patients_organization_id_rx_number"
+        ),
+        Index("ix_patients_organization_id_status", "organization_id", "status"),
+    )
 
     name_en: Mapped[str] = mapped_column(String(255))
     name_ar: Mapped[str] = mapped_column(String(255))
@@ -34,7 +42,7 @@ class Patient(Base, UuidPrimaryKeyMixin, TimestampMixin):
     town_ar: Mapped[str] = mapped_column(String(255))
     birth_year: Mapped[int] = mapped_column(Integer)
     last_visit: Mapped[date | None] = mapped_column(Date, default=None)
-    status: Mapped[str] = mapped_column(String(20), index=True)
+    status: Mapped[str] = mapped_column(String(20))
 
     od_sph: Mapped[Decimal | None] = mapped_column(Numeric(4, 2), default=None)
     od_cyl: Mapped[Decimal | None] = mapped_column(Numeric(4, 2), default=None)
@@ -72,7 +80,7 @@ class Patient(Base, UuidPrimaryKeyMixin, TimestampMixin):
     )
 
 
-class PatientNote(Base, UuidPrimaryKeyMixin):
+class PatientNote(Base, UuidPrimaryKeyMixin, TenantMixin):
     __tablename__ = "patient_notes"
 
     patient_id: Mapped[uuid.UUID] = mapped_column(
@@ -80,14 +88,12 @@ class PatientNote(Base, UuidPrimaryKeyMixin):
     )
     en: Mapped[str] = mapped_column(String(1000))
     ar: Mapped[str] = mapped_column(String(1000))
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     patient: Mapped["Patient"] = relationship(back_populates="notes")
 
 
-class VisitHistory(Base, UuidPrimaryKeyMixin):
+class VisitHistory(Base, UuidPrimaryKeyMixin, TenantMixin):
     __tablename__ = "visit_history"
 
     patient_id: Mapped[uuid.UUID] = mapped_column(
@@ -102,7 +108,7 @@ class VisitHistory(Base, UuidPrimaryKeyMixin):
     patient: Mapped["Patient"] = relationship(back_populates="visits")
 
 
-class LensConfig(Base, UuidPrimaryKeyMixin, TimestampMixin):
+class LensConfig(TenantEntity):
     """The patient's current lens configuration snapshot.
 
     Stores catalog references by name rather than foreign keys so the record survives

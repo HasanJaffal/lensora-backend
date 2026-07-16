@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy import JSON, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import Base, TimestampMixin, UuidPrimaryKeyMixin
+from app.db.base import TenantEntity
 
 
 class IntakeStatus(StrEnum):
@@ -13,7 +13,7 @@ class IntakeStatus(StrEnum):
     COMPLETED = "completed"
 
 
-class IntakeSubmission(Base, UuidPrimaryKeyMixin, TimestampMixin):
+class IntakeSubmission(TenantEntity):
     """A first-visit intake questionnaire (FR-INT).
 
     Each BRD section is persisted as a structured JSON document so the form can evolve

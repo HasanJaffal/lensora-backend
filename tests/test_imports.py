@@ -61,9 +61,7 @@ async def test_get_import_returns_stored_result(api_client: AsyncClient) -> None
 
 
 async def test_get_unknown_import_returns_not_found(api_client: AsyncClient) -> None:
-    response = await api_client.get(
-        "/api/v1/imports/00000000-0000-0000-0000-000000000000"
-    )
+    response = await api_client.get("/api/v1/imports/00000000-0000-0000-0000-000000000000")
 
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "resource.notFound"

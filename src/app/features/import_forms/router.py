@@ -3,19 +3,17 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, UploadFile
 
-from app.common.deps import SessionDep, require_auth
+from app.common.deps import SessionDep, TenantContextDep, require_auth
 from app.common.envelope import Envelope, ok
 from app.features.ai.deps import get_ai_provider, get_fallback_provider
 from app.features.import_forms.schemas import ImportDto, IntakeFormDefinitionDto
 from app.features.import_forms.service import ImportService
 
-router = APIRouter(
-    prefix="/imports", tags=["imports"], dependencies=[Depends(require_auth)]
-)
+router = APIRouter(prefix="/imports", tags=["imports"], dependencies=[Depends(require_auth)])
 
 
-def get_import_service(session: SessionDep) -> ImportService:
-    return ImportService(session, get_ai_provider(), get_fallback_provider())
+def get_import_service(session: SessionDep, tenant_context: TenantContextDep) -> ImportService:
+    return ImportService(session, tenant_context, get_ai_provider(), get_fallback_provider())
 
 
 ImportServiceDep = Annotated[ImportService, Depends(get_import_service)]
@@ -37,9 +35,7 @@ async def create_import(
 
 
 @router.get("/{import_id}")
-async def get_import(
-    import_id: uuid.UUID, service: ImportServiceDep
-) -> Envelope[ImportDto]:
+async def get_import(import_id: uuid.UUID, service: ImportServiceDep) -> Envelope[ImportDto]:
     return ok(await service.get_import(import_id))
 
 

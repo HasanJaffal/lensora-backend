@@ -34,9 +34,7 @@ class InventoryService:
         records = await self._items.list_all()
         low_stock = sum(1 for item in records if item.quantity <= item.threshold)
         out_of_stock = sum(1 for item in records if item.quantity <= 0)
-        total_value = sum(
-            (item.price * item.quantity for item in records), start=Decimal("0")
-        )
+        total_value = sum((item.price * item.quantity for item in records), start=Decimal("0"))
         return InventoryStatsDto(
             total_skus=len(records),
             low_stock_count=low_stock,

@@ -22,9 +22,7 @@ class UuidPrimaryKeyMixin:
 
 
 class TimestampMixin:
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
@@ -33,9 +31,7 @@ class TimestampMixin:
 class TenantMixin:
     """Adds the tenant-ownership column. Applied to models scoped to an organization."""
 
-    organization_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("organization.id"), index=True
-    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organization.id"), index=True)
 
 
 class TenantEntity(Base, UuidPrimaryKeyMixin, TimestampMixin, TenantMixin):

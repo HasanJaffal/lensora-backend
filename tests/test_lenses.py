@@ -4,6 +4,8 @@ from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.common.tenant_context import TenantContext
+from app.features.auth.models import User, UserRole
 from app.features.inventory.models import InventoryItem
 from app.features.lenses.pricing import LineItem, price_order
 from app.features.lenses.schemas import CreateOrderRequest
@@ -88,8 +90,12 @@ async def test_create_order_prices_and_sets_patient_to_lab(api_client: AsyncClie
 
     assert response.status_code == 200
     order = response.json()["data"]
-    expected_total = Decimal("40") + Decimal("25") + Decimal("20") + Decimal("30") + (
-        Decimal(str(frame["price"]))
+    expected_total = (
+        Decimal("40")
+        + Decimal("25")
+        + Decimal("20")
+        + Decimal("30")
+        + (Decimal(str(frame["price"])))
     )
     assert Decimal(str(order["total"])) == expected_total
     assert Decimal(str(order["deposit"])) == (expected_total * Decimal("0.40")).quantize(
@@ -130,9 +136,7 @@ async def test_order_with_out_of_stock_frame_is_rejected(api_client: AsyncClient
 
 
 async def test_order_for_unknown_patient_returns_not_found(api_client: AsyncClient) -> None:
-    payload, _ = await _valid_order_payload(
-        api_client, "00000000-0000-0000-0000-000000000000"
-    )
+    payload, _ = await _valid_order_payload(api_client, "00000000-0000-0000-0000-000000000000")
 
     response = await api_client.post("/api/v1/lenses/orders", json=payload)
 
@@ -164,7 +168,13 @@ async def test_patient_without_order_returns_not_found(api_client: AsyncClient) 
 
 async def test_stock_decrement_toggle_reduces_frame_quantity(
     db_sessionmaker: async_sessionmaker[AsyncSession],
+    seeded_admin: User,
 ) -> None:
+    tenant_context = TenantContext(
+        organization_id=seeded_admin.organization_id,
+        user_id=seeded_admin.id,
+        role=UserRole(seeded_admin.role),
+    )
     async with db_sessionmaker() as session:
         frame = await session.scalar(
             select(InventoryItem).where(
@@ -176,7 +186,7 @@ async def test_stock_decrement_toggle_reduces_frame_quantity(
         frame_id = frame.id
         request = await _build_service_order_request(session, frame_id)
 
-    service = OrderService(session, db_sessionmaker, decrement_frame_stock=True)
+    service = OrderService(session, db_sessionmaker, tenant_context, decrement_frame_stock=True)
     await service.create_order(request)
 
     async with db_sessionmaker() as session:

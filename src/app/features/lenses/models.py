@@ -1,10 +1,10 @@
 import uuid
 from decimal import Decimal
 
-from sqlalchemy import ForeignKey, Integer, Numeric, String
+from sqlalchemy import ForeignKey, Integer, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base, TimestampMixin, UuidPrimaryKeyMixin
+from app.db.base import Base, TenantEntity, TenantMixin, UuidPrimaryKeyMixin
 
 
 class LensOptionMixin:
@@ -21,23 +21,43 @@ class LensOptionMixin:
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
 
 
-class LensType(Base, UuidPrimaryKeyMixin, TimestampMixin, LensOptionMixin):
+class LensType(TenantEntity, LensOptionMixin):
     __tablename__ = "lens_types"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id", "name_en", name="uq_lens_types_organization_id_name_en"
+        ),
+    )
 
 
-class LensMaterial(Base, UuidPrimaryKeyMixin, TimestampMixin, LensOptionMixin):
+class LensMaterial(TenantEntity, LensOptionMixin):
     __tablename__ = "lens_materials"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id", "name_en", name="uq_lens_materials_organization_id_name_en"
+        ),
+    )
 
 
-class LensCoating(Base, UuidPrimaryKeyMixin, TimestampMixin, LensOptionMixin):
+class LensCoating(TenantEntity, LensOptionMixin):
     __tablename__ = "lens_coatings"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id", "name_en", name="uq_lens_coatings_organization_id_name_en"
+        ),
+    )
 
 
-class LensTint(Base, UuidPrimaryKeyMixin, TimestampMixin, LensOptionMixin):
+class LensTint(TenantEntity, LensOptionMixin):
     __tablename__ = "lens_tints"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id", "name_en", name="uq_lens_tints_organization_id_name_en"
+        ),
+    )
 
 
-class Order(Base, UuidPrimaryKeyMixin, TimestampMixin):
+class Order(TenantEntity):
     """A confirmed lens order: a priced snapshot of the configurator selections.
 
     Prices and labels are denormalized so the order survives later catalog or stock
@@ -62,7 +82,7 @@ class Order(Base, UuidPrimaryKeyMixin, TimestampMixin):
     )
 
 
-class OrderItem(Base, UuidPrimaryKeyMixin):
+class OrderItem(Base, UuidPrimaryKeyMixin, TenantMixin):
     __tablename__ = "order_items"
 
     order_id: Mapped[uuid.UUID] = mapped_column(

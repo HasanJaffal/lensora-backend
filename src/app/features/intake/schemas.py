@@ -115,9 +115,7 @@ class IntakeDto(CamelModel):
             individual_info=IndividualInfoDto.model_validate(intake.individual_info),
             motive=MotiveDto.model_validate(intake.motive),
             themes=ThemesDto.model_validate(intake.themes),
-            refraction_history=RefractionHistoryDto.model_validate(
-                intake.refraction_history
-            ),
+            refraction_history=RefractionHistoryDto.model_validate(intake.refraction_history),
             antecedents=AntecedentsDto.model_validate(intake.antecedents),
             created_at=intake.created_at,
             updated_at=intake.updated_at,
@@ -150,9 +148,7 @@ class IntakeCreateRequest(CamelModel):
     individual_info: IndividualInfoDto = Field(default_factory=IndividualInfoDto)
     motive: MotiveDto = Field(default_factory=MotiveDto)
     themes: ThemesDto = Field(default_factory=ThemesDto)
-    refraction_history: RefractionHistoryDto = Field(
-        default_factory=RefractionHistoryDto
-    )
+    refraction_history: RefractionHistoryDto = Field(default_factory=RefractionHistoryDto)
     antecedents: AntecedentsDto = Field(default_factory=AntecedentsDto)
 
 

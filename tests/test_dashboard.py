@@ -30,9 +30,7 @@ async def test_kpis_match_underlying_data(api_client: AsyncClient) -> None:
 
     assert int(Decimal(str(data["kpis"]["ordersInLab"]["value"]))) == 1
     assert int(Decimal(str(data["kpis"]["stockAlerts"]["value"]))) == stats["lowStockCount"]
-    assert int(Decimal(str(data["kpis"]["appointmentsToday"]["value"]))) == len(
-        data["schedule"]
-    )
+    assert int(Decimal(str(data["kpis"]["appointmentsToday"]["value"]))) == len(data["schedule"])
 
 
 async def test_schedule_is_time_ordered_with_patient_details(
@@ -81,13 +79,9 @@ async def test_greeting_carries_bilingual_doctor_and_counts(
 
 async def _catalog_and_frame(client: AsyncClient) -> dict:
     catalog = (await client.get("/api/v1/lenses/catalog")).json()["data"]
-    frames = (await client.get("/api/v1/inventory", params={"category": "frame"})).json()[
-        "data"
-    ]
+    frames = (await client.get("/api/v1/inventory", params={"category": "frame"})).json()["data"]
     frame = next(f for f in frames if f["qty"] > 0)
-    patients = (await client.get("/api/v1/patients", params={"pageSize": 100})).json()[
-        "data"
-    ]
+    patients = (await client.get("/api/v1/patients", params={"pageSize": 100})).json()["data"]
     patient_id = next(p["id"] for p in patients if p["nameEn"] == "Layla Haidar")
     return {
         "patientId": patient_id,

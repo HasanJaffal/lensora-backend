@@ -42,9 +42,7 @@ class _InMemoryUserRepository(UserRepository):
 
 def _client_for(users: list[User]) -> tuple[FastAPI, User]:
     app = create_app()
-    app.dependency_overrides[get_auth_service] = lambda: AuthService(
-        _InMemoryUserRepository(users)
-    )
+    app.dependency_overrides[get_auth_service] = lambda: AuthService(_InMemoryUserRepository(users))
     return app, users[0]
 
 
@@ -128,9 +126,7 @@ async def test_me_with_valid_token_returns_current_user(
     )
     token = login.json()["data"]["accessToken"]
 
-    response = await client.get(
-        "/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"}
-    )
+    response = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
 
     assert response.status_code == 200
     assert response.json()["data"]["id"] == str(doctor.id)
@@ -150,9 +146,7 @@ async def test_me_with_malformed_token_returns_session_expired(
     auth_client: tuple[AsyncClient, User],
 ) -> None:
     client, _ = auth_client
-    response = await client.get(
-        "/api/v1/auth/me", headers={"Authorization": "Bearer not.a.jwt"}
-    )
+    response = await client.get("/api/v1/auth/me", headers={"Authorization": "Bearer not.a.jwt"})
 
     assert response.status_code == 401
     assert response.json()["error"]["code"] == "auth.sessionExpired"
@@ -163,9 +157,7 @@ async def test_me_for_deleted_user_returns_session_expired(
 ) -> None:
     client, _ = auth_client
     token = create_access_token(str(uuid.uuid4()))
-    response = await client.get(
-        "/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"}
-    )
+    response = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
 
     assert response.status_code == 401
     assert response.json()["error"]["code"] == "auth.sessionExpired"

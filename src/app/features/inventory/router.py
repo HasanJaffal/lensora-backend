@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
-from app.common.deps import SessionDep, require_auth
+from app.common.deps import SessionDep, TenantContextDep, require_auth
 from app.common.envelope import Envelope, ok
 from app.common.exceptions import ValidationError
 from app.features.inventory.models import InventoryCategory
@@ -16,13 +16,13 @@ from app.features.inventory.schemas import (
 )
 from app.features.inventory.service import InventoryService
 
-router = APIRouter(
-    prefix="/inventory", tags=["inventory"], dependencies=[Depends(require_auth)]
-)
+router = APIRouter(prefix="/inventory", tags=["inventory"], dependencies=[Depends(require_auth)])
 
 
-def get_inventory_service(session: SessionDep) -> InventoryService:
-    return InventoryService(InventoryRepository(session))
+def get_inventory_service(
+    session: SessionDep, tenant_context: TenantContextDep
+) -> InventoryService:
+    return InventoryService(InventoryRepository(session, tenant_context))
 
 
 InventoryServiceDep = Annotated[InventoryService, Depends(get_inventory_service)]
@@ -35,9 +35,7 @@ def _parse_category(category: str | None) -> InventoryCategory | None:
         return InventoryCategory(category)
     except ValueError as exc:
         allowed = ", ".join(member.value for member in InventoryCategory)
-        raise ValidationError(
-            f"Unknown category '{category}'; expected one of: {allowed}"
-        ) from exc
+        raise ValidationError(f"Unknown category '{category}'; expected one of: {allowed}") from exc
 
 
 @router.get("")
@@ -46,9 +44,7 @@ async def list_inventory(
     category: Annotated[str | None, Query()] = None,
     low_stock: Annotated[bool, Query(alias="lowStock")] = False,
 ) -> Envelope[list[InventoryItemDto]]:
-    items = await service.list_items(
-        category=_parse_category(category), low_stock=low_stock
-    )
+    items = await service.list_items(category=_parse_category(category), low_stock=low_stock)
     return ok(items)
 
 

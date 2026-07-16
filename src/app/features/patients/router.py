@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
-from app.common.deps import SessionDep, require_auth
+from app.common.deps import SessionDep, TenantContextDep, require_auth
 from app.common.envelope import Envelope, Meta, ok
 from app.common.exceptions import ValidationError
 from app.common.pagination import PageParams
@@ -18,13 +18,11 @@ from app.features.patients.schemas import (
 )
 from app.features.patients.service import PatientService
 
-router = APIRouter(
-    prefix="/patients", tags=["patients"], dependencies=[Depends(require_auth)]
-)
+router = APIRouter(prefix="/patients", tags=["patients"], dependencies=[Depends(require_auth)])
 
 
-def get_patient_service(session: SessionDep) -> PatientService:
-    return PatientService(PatientRepository(session))
+def get_patient_service(session: SessionDep, tenant_context: TenantContextDep) -> PatientService:
+    return PatientService(PatientRepository(session, tenant_context), tenant_context)
 
 
 PatientServiceDep = Annotated[PatientService, Depends(get_patient_service)]
@@ -69,9 +67,7 @@ async def create_patient(
 
 
 @router.get("/{patient_id}")
-async def get_patient(
-    patient_id: uuid.UUID, service: PatientServiceDep
-) -> Envelope[PatientDto]:
+async def get_patient(patient_id: uuid.UUID, service: PatientServiceDep) -> Envelope[PatientDto]:
     return ok(await service.get_patient(patient_id))
 
 

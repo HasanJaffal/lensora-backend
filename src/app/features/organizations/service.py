@@ -45,17 +45,13 @@ class OrganizationProvisioningService:
         self._organizations = organizations
         self._users = users
 
-    async def provision(
-        self, request: OrganizationProvisioningRequest
-    ) -> ProvisionedOrganization:
+    async def provision(self, request: OrganizationProvisioningRequest) -> ProvisionedOrganization:
         if await self._organizations.get_by_slug(request.organization_slug) is not None:
             raise OrganizationSlugTakenError(
                 f"Organization slug '{request.organization_slug}' is already in use"
             )
         if await self._users.get_by_email(request.admin_email) is not None:
-            raise AccountEmailTakenError(
-                f"Account email '{request.admin_email}' is already in use"
-            )
+            raise AccountEmailTakenError(f"Account email '{request.admin_email}' is already in use")
 
         organization = Organization(
             name=request.organization_name,

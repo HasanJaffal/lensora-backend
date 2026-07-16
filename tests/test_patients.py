@@ -77,9 +77,7 @@ async def test_get_full_record_matches_four_tab_needs(api_client: AsyncClient) -
 
 
 async def test_get_unknown_patient_returns_not_found(api_client: AsyncClient) -> None:
-    response = await api_client.get(
-        "/api/v1/patients/00000000-0000-0000-0000-000000000000"
-    )
+    response = await api_client.get("/api/v1/patients/00000000-0000-0000-0000-000000000000")
 
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "patient.notFound"

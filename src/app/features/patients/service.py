@@ -2,6 +2,7 @@ import uuid
 
 from app.common.exceptions import PatientNotFoundError
 from app.common.pagination import PaginationMeta
+from app.common.tenant_context import TenantContext
 from app.features.patients.models import (
     LensConfig,
     Patient,
@@ -23,8 +24,9 @@ from app.features.patients.schemas import (
 class PatientService:
     """Business logic for patient records: listing, search, and record maintenance."""
 
-    def __init__(self, patients: PatientRepository) -> None:
+    def __init__(self, patients: PatientRepository, tenant_context: TenantContext) -> None:
         self._patients = patients
+        self._tenant_context = tenant_context
 
     async def list_patients(
         self,
@@ -51,7 +53,9 @@ class PatientService:
         return [VisitHistoryDto.from_model(visit) for visit in patient.visits]
 
     async def create_patient(self, request: PatientCreateRequest) -> PatientDto:
+        organization_id = self._tenant_context.organization_id
         patient = Patient(
+            organization_id=organization_id,
             name_en=request.name_en,
             name_ar=request.name_ar,
             phone=request.phone,
@@ -67,12 +71,15 @@ class PatientService:
             rx_number=request.rx_number,
             rx_date=request.rx_date,
             tags=list(request.tags),
-            notes=[PatientNote(en=note.en, ar=note.ar) for note in request.notes],
+            notes=[
+                PatientNote(organization_id=organization_id, en=note.en, ar=note.ar)
+                for note in request.notes
+            ],
         )
         if request.refraction is not None:
             _assign_refraction(patient, request.refraction)
         if request.lens_config is not None:
-            patient.lens_config = _build_lens_config(request.lens_config)
+            patient.lens_config = _build_lens_config(request.lens_config, organization_id)
 
         self._patients.add(patient)
         await self._patients.commit()
@@ -110,7 +117,7 @@ class PatientService:
         if "refraction" in changed and request.refraction is not None:
             _assign_refraction(patient, request.refraction)
         if "lens_config" in changed:
-            _apply_lens_config(patient, request.lens_config)
+            _apply_lens_config(patient, request.lens_config, patient.organization_id)
 
         await self._patients.commit()
         await self._patients.refresh(patient)
@@ -134,8 +141,9 @@ def _assign_refraction(patient: Patient, refraction: RefractionDto) -> None:
     patient.os_add = refraction.os.add
 
 
-def _build_lens_config(config: LensConfigInput) -> LensConfig:
+def _build_lens_config(config: LensConfigInput, organization_id: uuid.UUID) -> LensConfig:
     return LensConfig(
+        organization_id=organization_id,
         lens_type=config.lens_type,
         material=config.material,
         coatings=list(config.coatings),
@@ -144,12 +152,14 @@ def _build_lens_config(config: LensConfigInput) -> LensConfig:
     )
 
 
-def _apply_lens_config(patient: Patient, config: LensConfigInput | None) -> None:
+def _apply_lens_config(
+    patient: Patient, config: LensConfigInput | None, organization_id: uuid.UUID
+) -> None:
     if config is None:
         patient.lens_config = None
         return
     if patient.lens_config is None:
-        patient.lens_config = _build_lens_config(config)
+        patient.lens_config = _build_lens_config(config, organization_id)
         return
     patient.lens_config.lens_type = config.lens_type
     patient.lens_config.material = config.material

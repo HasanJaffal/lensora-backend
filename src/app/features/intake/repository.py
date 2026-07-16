@@ -1,22 +1,24 @@
 import uuid
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.common.tenant_context import TenantContext
+from app.db.repository import TenantScopedRepository
 from app.features.intake.models import IntakeStatus, IntakeSubmission
 
 
-class IntakeRepository:
+class IntakeRepository(TenantScopedRepository):
     """Data access for intake submissions."""
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, tenant_context: TenantContext) -> None:
+        super().__init__(session, tenant_context)
         self._session = session
 
     def add(self, intake: IntakeSubmission) -> None:
-        self._session.add(intake)
+        self.add_scoped(intake)
 
     async def get_by_id(self, intake_id: uuid.UUID) -> IntakeSubmission | None:
-        return await self._session.get(IntakeSubmission, intake_id)
+        return await self.get_scoped(IntakeSubmission, intake_id)
 
     async def list_submissions(
         self,
@@ -24,7 +26,7 @@ class IntakeRepository:
         patient_id: uuid.UUID | None = None,
         status: IntakeStatus | None = None,
     ) -> list[IntakeSubmission]:
-        statement = select(IntakeSubmission).order_by(
+        statement = self.scoped_select(IntakeSubmission).order_by(
             IntakeSubmission.created_at.desc()
         )
         if patient_id is not None:

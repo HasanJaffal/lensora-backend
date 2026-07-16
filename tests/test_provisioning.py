@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.common.exceptions import AccountEmailTakenError, OrganizationSlugTakenError
 from app.core.security import verify_password
+from app.db.seeds.organization_defaults import seed_lens_catalog, seed_tips
 from app.features.auth.models import User, UserRole
 from app.features.auth.repository import UserRepository
 from app.features.lenses.models import LensType
@@ -93,26 +94,38 @@ async def test_provision_with_duplicate_admin_email_is_rejected(
             await _provision(session, _request(org_slug="org-two", admin_email="admin@acme.com"))
 
 
-async def test_provisioning_seeds_lens_catalog_and_tips_idempotently(
+async def test_provisioning_seeds_lens_catalog_and_tips_per_organization(
     db_sessionmaker: async_sessionmaker[AsyncSession],
 ) -> None:
-    async def _count(model: type[LensType] | type[Tip]) -> int:
+    async def _count_for_org(model: type[LensType] | type[Tip], organization_id: object) -> int:
         async with db_sessionmaker() as session:
-            result = await session.execute(select(func.count()).select_from(model))
+            result = await session.execute(
+                select(func.count())
+                .select_from(model)
+                .where(model.organization_id == organization_id)
+            )
             return result.scalar_one()
 
-    await provision_organization(
+    acme = await provision_organization(
         _request(org_slug="acme", admin_email="admin@acme.com"), db_sessionmaker
     )
-    lens_type_count_after_first_run = await _count(LensType)
-    tip_count_after_first_run = await _count(Tip)
+    acme_lens_type_count = await _count_for_org(LensType, acme.organization.id)
+    acme_tip_count = await _count_for_org(Tip, acme.organization.id)
 
-    assert lens_type_count_after_first_run > 0
-    assert tip_count_after_first_run > 0
+    assert acme_lens_type_count > 0
+    assert acme_tip_count > 0
 
-    await provision_organization(
+    other = await provision_organization(
         _request(org_slug="other-org", admin_email="other-admin@acme.com"), db_sessionmaker
     )
 
-    assert await _count(LensType) == lens_type_count_after_first_run
-    assert await _count(Tip) == tip_count_after_first_run
+    assert await _count_for_org(LensType, other.organization.id) == acme_lens_type_count
+    assert await _count_for_org(Tip, other.organization.id) == acme_tip_count
+    assert await _count_for_org(LensType, acme.organization.id) == acme_lens_type_count
+
+    async with db_sessionmaker() as session, session.begin():
+        await seed_lens_catalog(session, acme.organization.id)
+        await seed_tips(session, acme.organization.id)
+
+    assert await _count_for_org(LensType, acme.organization.id) == acme_lens_type_count
+    assert await _count_for_org(Tip, acme.organization.id) == acme_tip_count

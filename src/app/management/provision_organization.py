@@ -62,8 +62,9 @@ async def provision_organization(
             session, OrganizationRepository(session), UserRepository(session)
         )
         provisioned = await service.provision(request)
-        await seed_lens_catalog(session)
-        await seed_tips(session)
+        organization_id = provisioned.organization.id
+        await seed_lens_catalog(session, organization_id)
+        await seed_tips(session, organization_id)
         return provisioned
 
 

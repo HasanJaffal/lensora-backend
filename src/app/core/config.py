@@ -1,4 +1,3 @@
-from decimal import Decimal
 from functools import lru_cache
 from typing import Annotated
 
@@ -15,19 +14,13 @@ class Settings(BaseSettings):
 
     app_env: str = Field(default="development", alias="APP_ENV")
     database_url: str | None = Field(default=None, alias="DATABASE_URL")
-    cors_origins: Annotated[list[str], NoDecode] = Field(
-        default_factory=list, alias="CORS_ORIGINS"
-    )
+    cors_origins: Annotated[list[str], NoDecode] = Field(default_factory=list, alias="CORS_ORIGINS")
     secret_key: str | None = Field(default=None, alias="SECRET_KEY")
     jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
-    access_token_expires_minutes: int = Field(
-        default=60 * 24, alias="ACCESS_TOKEN_EXPIRES_MINUTES"
-    )
+    access_token_expires_minutes: int = Field(default=60 * 24, alias="ACCESS_TOKEN_EXPIRES_MINUTES")
     ai_provider: str = Field(default="anthropic", alias="AI_PROVIDER")
     ai_api_key: str | None = Field(default=None, alias="AI_API_KEY")
     ai_model: str = Field(default="claude-sonnet-5", alias="AI_MODEL")
-
-    deposit_percent: Decimal = Field(default=Decimal("0.40"), alias="DEPOSIT_PERCENT")
 
     @field_validator("cors_origins", mode="before")
     @classmethod

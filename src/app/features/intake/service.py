@@ -44,14 +44,10 @@ class IntakeService:
     async def list_intakes(
         self, *, patient_id: uuid.UUID | None, status: IntakeStatus | None
     ) -> list[IntakeListItemDto]:
-        records = await self._intakes.list_submissions(
-            patient_id=patient_id, status=status
-        )
+        records = await self._intakes.list_submissions(patient_id=patient_id, status=status)
         return [IntakeListItemDto.from_model(record) for record in records]
 
-    async def update_intake(
-        self, intake_id: uuid.UUID, request: IntakeUpdateRequest
-    ) -> IntakeDto:
+    async def update_intake(self, intake_id: uuid.UUID, request: IntakeUpdateRequest) -> IntakeDto:
         intake = await self._require_intake(intake_id)
         changed = request.model_fields_set
 
