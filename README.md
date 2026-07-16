@@ -1,11 +1,15 @@
 # Lensora — Backend
 
-FastAPI backend for the Lensora optometrist practice management platform.
+FastAPI backend for Lensora, a multi-tenant optometrist practice management platform. Each
+organization (tenant) is provisioned with exactly one `ORGANIZATION_ADMIN` account and gets fully
+isolated patients, inventory, catalogs, and orders.
 
 Layered, SOLID architecture: `routers → schemas (DTOs) → services → repositories → models`.
-The app factory, configuration, `/health` endpoint (Task 01), Docker/environment (Task 02), the
-async database + code-first migration layer (Task 03), and the shared response envelope + error
-handling (Task 04) are in place. Domain models (Task 06) are added by later tasks.
+Tenant isolation is enforced at the repository layer via `TenantScopedRepository`
+(`get_scoped`/`scoped_select`/`add_scoped`) bound to a per-request `TenantContext`. See
+[`CLAUDE.md`](CLAUDE.md) for the full engineering standards, including tenancy invariants, audit
+rules, and roles. Requirements and the original implementation plan live in the parent workspace's
+[`business_requirement.md`](../business_requirement.md) and [`tasks/`](../tasks/).
 
 ## Response envelope & errors
 
@@ -62,17 +66,20 @@ cp .env.example .env
 ```
 
 Settings keys: `APP_ENV`, `API_PORT`, `DATABASE_URL`, `POSTGRES_USER`, `POSTGRES_PASSWORD`,
-`POSTGRES_DB`, `SECRET_KEY`, `CORS_ORIGINS`, `DEPOSIT_PERCENT`, `AI_PROVIDER`, `AI_API_KEY`,
-`AI_MODEL`.
+`POSTGRES_DB`, `SECRET_KEY`, `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRES_MINUTES`, `CORS_ORIGINS`,
+`AI_PROVIDER`, `AI_API_KEY`, `AI_MODEL`.
+
+There is no environment-level seed account and no global deposit setting: every organization and
+its admin account come from an explicit `provision_organization` run (below), and the deposit
+percentage is a per-organization value passed at provisioning time.
 
 ## Running with Docker
 
-The backend and a PostgreSQL database run together via docker compose, defined in the parent
-workspace wrapper (`../docker-compose.yml`), which references this repo as `lensora-backend/`.
-From that wrapper directory:
+The backend and a PostgreSQL database run together via [`docker-compose.yml`](docker-compose.yml)
+in this repo:
 
 ```bash
-cp lensora-backend/.env.example lensora-backend/.env   # first time only
+cp .env.example .env   # first time only
 docker compose up --build
 ```
 
@@ -83,9 +90,8 @@ The API is published on `API_PORT` (default `8000`):
 curl http://127.0.0.1:8000/health
 ```
 
-Both services read configuration exclusively from `lensora-backend/.env`; nothing is baked into
-the image. To publish on a different host port, run compose with that value exported for
-interpolation, e.g. `docker compose --env-file lensora-backend/.env up` after setting `API_PORT`.
+Both services read configuration exclusively from this repo's `.env`; nothing is baked into the
+image. To publish on a different host port, set `API_PORT` before running compose.
 
 ## Developer tasks
 
@@ -125,3 +131,23 @@ make migrate                     # apply to head
 The migration URL is injected from `DATABASE_URL` in `migrations/env.py`; it is never hardcoded in
 `alembic.ini`. When running Alembic against the compose database from the host, point `DATABASE_URL`
 at `localhost` (the `db` hostname only resolves inside the compose network).
+
+## Provisioning organizations
+
+Lensora is multi-tenant: there is no environment-seeded account. Every organization and its single
+`ORGANIZATION_ADMIN` account are created by running the `provision_organization` management
+command, which also seeds that organization's default lens catalog and tips:
+
+```bash
+uv run python -m app.management.provision_organization \
+    --org-name "Acme Optometry" --org-slug acme \
+    --admin-email admin@acme.com --admin-password change-me \
+    --admin-display-name-en "Dr. Jane Doe" --admin-display-name-ar "د. جين دو" \
+    --deposit-percent 0.40
+```
+
+`--org-slug` and `--admin-email` must each be globally unique; re-running with the same slug/email
+fails cleanly rather than duplicating data. `--deposit-percent` is optional (defaults to `0.40`) and
+sets that organization's lens-order deposit fraction — deposit percent is a per-organization value,
+not a global setting. Run this against a migrated database (`make migrate` first); it requires
+`DATABASE_URL` to be reachable the same way `make migrate` does.
