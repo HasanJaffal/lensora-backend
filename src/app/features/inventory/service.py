@@ -32,10 +32,10 @@ class InventoryService:
 
     async def get_stats(self) -> InventoryStatsDto:
         records = await self._items.list_all()
-        low_stock = sum(1 for item in records if item.qty <= item.threshold)
-        out_of_stock = sum(1 for item in records if item.qty <= 0)
+        low_stock = sum(1 for item in records if item.quantity <= item.threshold)
+        out_of_stock = sum(1 for item in records if item.quantity <= 0)
         total_value = sum(
-            (item.price * item.qty for item in records), start=Decimal("0")
+            (item.price * item.quantity for item in records), start=Decimal("0")
         )
         return InventoryStatsDto(
             total_skus=len(records),
@@ -65,7 +65,7 @@ class InventoryService:
         item = await self._require_item(item_id)
         changed = request.model_fields_set
         if "qty" in changed and request.qty is not None:
-            item.qty = request.qty
+            item.quantity = request.qty
         if "threshold" in changed and request.threshold is not None:
             item.threshold = request.threshold
         if "price" in changed and request.price is not None:

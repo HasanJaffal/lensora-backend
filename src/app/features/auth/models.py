@@ -11,7 +11,7 @@ class UserRole(StrEnum):
 
 
 class User(Base, UuidPrimaryKeyMixin, TimestampMixin):
-    __tablename__ = "users"
+    __tablename__ = "user_account"
 
     email: Mapped[str] = mapped_column(String(320), unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255))

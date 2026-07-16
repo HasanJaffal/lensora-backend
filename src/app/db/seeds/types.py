@@ -19,7 +19,7 @@ class InventorySeed:
     brand: str
     spec: str
     sku: str
-    qty: int
+    quantity: int
     threshold: int
     price: Decimal
     shape: str | None = None

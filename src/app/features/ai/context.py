@@ -18,7 +18,7 @@ class PatientSummary:
 class StockSummary:
     name: str
     sku: str
-    qty: int
+    quantity: int
     status: str
 
 

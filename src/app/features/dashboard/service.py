@@ -47,12 +47,12 @@ class DashboardService:
             status=None, query=None, offset=0, limit=_MAX_PATIENTS
         )
         inventory = await self._inventory.list_all()
-        low_stock = [item for item in inventory if item.qty <= item.threshold]
+        low_stock = [item for item in inventory if item.quantity <= item.threshold]
         sku_to_name = {item.sku: item.name for item in inventory}
 
         lab_count = _count(patients, PatientStatus.LAB)
         active_count = _count(patients, PatientStatus.ACTIVE)
-        out_count = sum(1 for item in low_stock if item.qty <= 0)
+        out_count = sum(1 for item in low_stock if item.quantity <= 0)
         revenue = await self._orders.total_revenue_since(_start_of_month())
 
         schedule = _build_schedule(patients)
@@ -125,15 +125,17 @@ def _build_schedule(patients: list[Patient]) -> list[ScheduleEntryDto]:
 
 
 def _build_low_stock(items: list[InventoryItem]) -> list[LowStockAlertDto]:
-    most_critical = sorted(items, key=lambda item: (item.qty, item.qty / (item.threshold or 1)))
+    most_critical = sorted(
+        items, key=lambda item: (item.quantity, item.quantity / (item.threshold or 1))
+    )
     return [
         LowStockAlertDto(
             id=str(item.id),
             name=item.name,
             sku=item.sku,
-            qty=item.qty,
+            qty=item.quantity,
             threshold=item.threshold,
-            status=derive_stock_status(item.qty, item.threshold),
+            status=derive_stock_status(item.quantity, item.threshold),
         )
         for item in most_critical[:_MAX_LOW_STOCK]
     ]

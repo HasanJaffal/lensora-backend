@@ -25,7 +25,7 @@ class InventoryItemDto(CamelModel):
     shape: str | None
     color: str | None
     sku: str
-    qty: int
+    qty: int  # maps to the `quantity` column; `qty` is the stable frontend API contract
     threshold: int
     price: Decimal
     status: str
@@ -42,11 +42,11 @@ class InventoryItemDto(CamelModel):
             shape=item.shape,
             color=item.color,
             sku=item.sku,
-            qty=item.qty,
+            qty=item.quantity,
             threshold=item.threshold,
             price=item.price,
-            status=derive_stock_status(item.qty, item.threshold),
-            quantity_ratio=quantity_ratio(item.qty, item.threshold),
+            status=derive_stock_status(item.quantity, item.threshold),
+            quantity_ratio=quantity_ratio(item.quantity, item.threshold),
         )
 
 
@@ -58,6 +58,6 @@ class InventoryStatsDto(CamelModel):
 
 
 class InventoryUpdateRequest(CamelModel):
-    qty: int | None = Field(default=None, ge=0)
+    qty: int | None = Field(default=None, ge=0)  # maps to the `quantity` column
     threshold: int | None = Field(default=None, ge=0)
     price: Decimal | None = Field(default=None, ge=0)

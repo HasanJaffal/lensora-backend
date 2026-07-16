@@ -45,9 +45,9 @@ async def test_stats_match_seed_data(api_client: AsyncClient) -> None:
 
     assert response.status_code == 200
     stats = response.json()["data"]
-    expected_low = sum(1 for i in INVENTORY_ITEMS if i.qty <= i.threshold)
-    expected_out = sum(1 for i in INVENTORY_ITEMS if i.qty == 0)
-    expected_value = sum((i.price * i.qty for i in INVENTORY_ITEMS), start=Decimal("0"))
+    expected_low = sum(1 for i in INVENTORY_ITEMS if i.quantity <= i.threshold)
+    expected_out = sum(1 for i in INVENTORY_ITEMS if i.quantity == 0)
+    expected_value = sum((i.price * i.quantity for i in INVENTORY_ITEMS), start=Decimal("0"))
 
     assert stats["totalSkus"] == len(INVENTORY_ITEMS)
     assert stats["lowStockCount"] == expected_low
@@ -72,7 +72,7 @@ async def test_low_stock_filter_returns_items_at_or_below_threshold(
     assert response.status_code == 200
     items = response.json()["data"]
     assert all(item["qty"] <= item["threshold"] for item in items)
-    assert len(items) == sum(1 for i in INVENTORY_ITEMS if i.qty <= i.threshold)
+    assert len(items) == sum(1 for i in INVENTORY_ITEMS if i.quantity <= i.threshold)
 
 
 async def test_unknown_category_is_rejected(api_client: AsyncClient) -> None:
@@ -91,7 +91,7 @@ async def test_frames_in_stock_excludes_out_of_stock(api_client: AsyncClient) ->
     frames = response.json()["data"]
     assert all(frame["category"] == "frame" for frame in frames)
     assert all(frame["qty"] > 0 for frame in frames)
-    expected = sum(1 for i in INVENTORY_ITEMS if i.category == "frame" and i.qty > 0)
+    expected = sum(1 for i in INVENTORY_ITEMS if i.category == "frame" and i.quantity > 0)
     assert len(frames) == expected
 
 

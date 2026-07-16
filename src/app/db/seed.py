@@ -77,7 +77,7 @@ async def _seed_inventory(session: AsyncSession) -> None:
                 shape=item.shape,
                 color=item.color,
                 sku=item.sku,
-                qty=item.qty,
+                quantity=item.quantity,
                 threshold=item.threshold,
                 price=item.price,
             )

@@ -170,7 +170,7 @@ def _chat_system_prompt(context: AssistantContext, locale: Locale) -> str:
     ] or ["- (none)"]
     lines.append("Low/out-of-stock items:")
     lines += [
-        f"- {item.name} ({item.sku}): {item.qty} left, {item.status}"
+        f"- {item.name} ({item.sku}): {item.quantity} left, {item.status}"
         for item in context.low_stock
     ] or ["- (none)"]
     return "\n".join(lines)

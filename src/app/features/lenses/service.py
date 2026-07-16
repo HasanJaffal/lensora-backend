@@ -109,7 +109,7 @@ class OrderService:
             frame = await inventory.get_by_id(request.frame_id)
             if frame is None:
                 raise _unknown_reference("frameId")
-            if frame.qty <= 0:
+            if frame.quantity <= 0:
                 raise OutOfStockError(f"Frame {frame.sku} is out of stock")
 
             priced = _price(
@@ -120,7 +120,7 @@ class OrderService:
 
             patient.status = PatientStatus.LAB.value
             if self._decrement_frame_stock:
-                frame.qty -= 1
+                frame.quantity -= 1
 
             await uow.session.flush()
             await uow.session.refresh(order, ["items", "created_at"])

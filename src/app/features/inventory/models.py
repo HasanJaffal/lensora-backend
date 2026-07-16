@@ -26,6 +26,6 @@ class InventoryItem(Base, UuidPrimaryKeyMixin, TimestampMixin):
     shape: Mapped[str | None] = mapped_column(String(50), default=None)
     color: Mapped[str | None] = mapped_column(String(50), default=None)
     sku: Mapped[str] = mapped_column(String(50), unique=True, index=True)
-    qty: Mapped[int] = mapped_column(Integer)
+    quantity: Mapped[int] = mapped_column(Integer)
     threshold: Mapped[int] = mapped_column(Integer)
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2))

@@ -167,10 +167,12 @@ async def test_stock_decrement_toggle_reduces_frame_quantity(
 ) -> None:
     async with db_sessionmaker() as session:
         frame = await session.scalar(
-            select(InventoryItem).where(InventoryItem.category == "frame", InventoryItem.qty > 0)
+            select(InventoryItem).where(
+                InventoryItem.category == "frame", InventoryItem.quantity > 0
+            )
         )
         assert frame is not None
-        starting_qty = frame.qty
+        starting_quantity = frame.quantity
         frame_id = frame.id
         request = await _build_service_order_request(session, frame_id)
 
@@ -180,7 +182,7 @@ async def test_stock_decrement_toggle_reduces_frame_quantity(
     async with db_sessionmaker() as session:
         refreshed = await session.get(InventoryItem, frame_id)
         assert refreshed is not None
-        assert refreshed.qty == starting_qty - 1
+        assert refreshed.quantity == starting_quantity - 1
 
 
 async def _build_service_order_request(

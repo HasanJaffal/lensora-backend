@@ -19,7 +19,7 @@ class InventoryRepository:
         if category is not None:
             statement = statement.where(InventoryItem.category == category)
         if low_stock:
-            statement = statement.where(InventoryItem.qty <= InventoryItem.threshold)
+            statement = statement.where(InventoryItem.quantity <= InventoryItem.threshold)
         return statement.order_by(InventoryItem.category, InventoryItem.name)
 
     async def list_items(
@@ -41,7 +41,7 @@ class InventoryRepository:
             select(InventoryItem)
             .where(
                 or_(*(InventoryItem.category == category for category in categories)),
-                InventoryItem.qty > 0,
+                InventoryItem.quantity > 0,
             )
             .order_by(InventoryItem.brand, InventoryItem.name)
         )

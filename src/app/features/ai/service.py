@@ -91,8 +91,8 @@ class AIService:
                 StockSummary(
                     name=item.name,
                     sku=item.sku,
-                    qty=item.qty,
-                    status=derive_stock_status(item.qty, item.threshold),
+                    quantity=item.quantity,
+                    status=derive_stock_status(item.quantity, item.threshold),
                 )
                 for item in low_stock_items
             ],

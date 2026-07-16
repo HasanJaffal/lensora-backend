@@ -39,7 +39,7 @@ class LowStockAlertDto(CamelModel):
     id: str
     name: str
     sku: str
-    qty: int
+    qty: int  # maps to InventoryItem.quantity; `qty` is the stable frontend API contract
     threshold: int
     status: str
 
