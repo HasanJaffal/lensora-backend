@@ -23,8 +23,9 @@ class Settings(BaseSettings):
     access_token_expires_minutes: int = Field(
         default=60 * 24, alias="ACCESS_TOKEN_EXPIRES_MINUTES"
     )
-    gemini_api_key: str | None = Field(default=None, alias="GEMINI_API_KEY")
-    gemini_model: str | None = Field(default=None, alias="GEMINI_MODEL")
+    ai_provider: str = Field(default="anthropic", alias="AI_PROVIDER")
+    ai_api_key: str | None = Field(default=None, alias="AI_API_KEY")
+    ai_model: str = Field(default="claude-sonnet-5", alias="AI_MODEL")
 
     deposit_percent: Decimal = Field(default=Decimal("0.40"), alias="DEPOSIT_PERCENT")
 
