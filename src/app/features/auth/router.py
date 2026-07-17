@@ -9,13 +9,16 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/login")
 async def login(body: LoginRequest, service: AuthServiceDep) -> Envelope[LoginResponse]:
-    access_token, user = await service.authenticate(body.email, body.password)
-    return ok(LoginResponse(access_token=access_token, user=UserDto.from_model(user)))
+    access_token, user, organization = await service.authenticate(body.email, body.password)
+    return ok(
+        LoginResponse(access_token=access_token, user=UserDto.from_model(user, organization))
+    )
 
 
 @router.get("/me")
-async def me(current_user: CurrentUser) -> Envelope[UserDto]:
-    return ok(UserDto.from_model(current_user))
+async def me(current_user: CurrentUser, service: AuthServiceDep) -> Envelope[UserDto]:
+    organization = await service.get_organization_for(current_user)
+    return ok(UserDto.from_model(current_user, organization))
 
 
 @router.post("/logout")

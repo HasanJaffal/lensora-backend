@@ -12,6 +12,7 @@ from app.db.session import get_session
 from app.features.auth.models import User, UserRole
 from app.features.auth.repository import UserRepository
 from app.features.auth.service import AuthService
+from app.features.organizations.repository import OrganizationRepository
 
 _bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -30,7 +31,7 @@ UowSessionmakerDep = Annotated[async_sessionmaker[AsyncSession], Depends(get_uow
 
 
 def get_auth_service(session: SessionDep) -> AuthService:
-    return AuthService(UserRepository(session))
+    return AuthService(UserRepository(session), OrganizationRepository(session))
 
 
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
@@ -42,7 +43,8 @@ async def get_current_user(
 ) -> User:
     if credentials is None:
         raise SessionExpiredError("Session has expired")
-    return await service.resolve_token(credentials.credentials)
+    user, _ = await service.resolve_token(credentials.credentials)
+    return user
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]

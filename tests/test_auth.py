@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import AsyncIterator
+from decimal import Decimal
 
 import pytest_asyncio
 from fastapi import FastAPI
@@ -10,6 +11,8 @@ from app.core.security import create_access_token, hash_password
 from app.features.auth.models import User, UserRole
 from app.features.auth.repository import UserRepository
 from app.features.auth.service import AuthService
+from app.features.organizations.models import Organization
+from app.features.organizations.repository import OrganizationRepository
 from app.main import create_app
 
 DOCTOR_PASSWORD = "correct-horse"
@@ -29,6 +32,15 @@ def _make_doctor(*, is_active: bool = True) -> User:
     return user
 
 
+def _make_organization(organization_id: uuid.UUID) -> Organization:
+    return Organization(
+        id=organization_id,
+        name="Lensora Optics",
+        slug="lensora-optics",
+        deposit_percent=Decimal("0.2000"),
+    )
+
+
 class _InMemoryUserRepository(UserRepository):
     def __init__(self, users: list[User]) -> None:
         self._users = users
@@ -40,9 +52,20 @@ class _InMemoryUserRepository(UserRepository):
         return next((user for user in self._users if user.id == user_id), None)
 
 
+class _InMemoryOrganizationRepository(OrganizationRepository):
+    def __init__(self, organizations: list[Organization]) -> None:
+        self._organizations = organizations
+
+    async def get_by_id(self, organization_id: uuid.UUID) -> Organization | None:
+        return next((org for org in self._organizations if org.id == organization_id), None)
+
+
 def _client_for(users: list[User]) -> tuple[FastAPI, User]:
     app = create_app()
-    app.dependency_overrides[get_auth_service] = lambda: AuthService(_InMemoryUserRepository(users))
+    organizations = [_make_organization(user.organization_id) for user in users]
+    app.dependency_overrides[get_auth_service] = lambda: AuthService(
+        _InMemoryUserRepository(users), _InMemoryOrganizationRepository(organizations)
+    )
     return app, users[0]
 
 
@@ -75,6 +98,8 @@ async def test_login_returns_token_and_user(
     assert body["data"]["user"]["email"] == doctor.email
     assert body["data"]["user"]["displayNameAr"] == doctor.display_name_ar
     assert body["data"]["user"]["role"] == "organizationAdmin"
+    assert body["data"]["user"]["organization"]["id"] == str(doctor.organization_id)
+    assert body["data"]["user"]["organization"]["slug"] == "lensora-optics"
 
 
 async def test_login_with_wrong_password_returns_invalid_credentials(
@@ -129,7 +154,9 @@ async def test_me_with_valid_token_returns_current_user(
     response = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
 
     assert response.status_code == 200
-    assert response.json()["data"]["id"] == str(doctor.id)
+    body = response.json()["data"]
+    assert body["id"] == str(doctor.id)
+    assert body["organization"]["id"] == str(doctor.organization_id)
 
 
 async def test_me_without_token_returns_session_expired(

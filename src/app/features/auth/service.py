@@ -13,22 +13,26 @@ from app.core.security import (
 )
 from app.features.auth.models import User
 from app.features.auth.repository import UserRepository
+from app.features.organizations.models import Organization
+from app.features.organizations.repository import OrganizationRepository
 
 
 class AuthService:
     """Authentication business logic: credential checks and token resolution."""
 
-    def __init__(self, users: UserRepository) -> None:
+    def __init__(self, users: UserRepository, organizations: OrganizationRepository) -> None:
         self._users = users
+        self._organizations = organizations
 
-    async def authenticate(self, email: str, password: str) -> tuple[str, User]:
+    async def authenticate(self, email: str, password: str) -> tuple[str, User, Organization]:
         user = await self._users.get_by_email(email)
         if user is None or not verify_password(password, user.hashed_password):
             raise InvalidCredentialsError("Invalid email or password")
         self._ensure_active(user)
-        return create_access_token(str(user.id)), user
+        organization = await self.get_organization_for(user)
+        return create_access_token(str(user.id)), user, organization
 
-    async def resolve_token(self, token: str) -> User:
+    async def resolve_token(self, token: str) -> tuple[User, Organization]:
         try:
             subject = decode_access_token(token)
             user_id = uuid.UUID(subject)
@@ -39,7 +43,14 @@ class AuthService:
         if user is None:
             raise SessionExpiredError("Session has expired")
         self._ensure_active(user)
-        return user
+        organization = await self.get_organization_for(user)
+        return user, organization
+
+    async def get_organization_for(self, user: User) -> Organization:
+        organization = await self._organizations.get_by_id(user.organization_id)
+        if organization is None:
+            raise SessionExpiredError("Session has expired")
+        return organization
 
     @staticmethod
     def _ensure_active(user: User) -> None:
