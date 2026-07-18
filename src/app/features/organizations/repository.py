@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.organizations.models import Organization
@@ -18,6 +18,13 @@ class OrganizationRepository:
     async def get_by_slug(self, slug: str) -> Organization | None:
         result = await self._session.execute(select(Organization).where(Organization.slug == slug))
         return result.scalar_one_or_none()
+
+    async def list_page(self, *, offset: int, limit: int) -> tuple[list[Organization], int]:
+        total = await self._session.scalar(select(func.count()).select_from(Organization))
+        result = await self._session.execute(
+            select(Organization).order_by(Organization.created_at.desc()).offset(offset).limit(limit)
+        )
+        return list(result.scalars().all()), total or 0
 
     def add(self, organization: Organization) -> None:
         self._session.add(organization)

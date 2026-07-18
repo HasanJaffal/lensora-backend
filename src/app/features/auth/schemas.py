@@ -21,17 +21,21 @@ class UserDto(CamelModel):
     display_name_en: str
     display_name_ar: str
     role: str
-    organization: OrganizationSummaryDto
+    organization: OrganizationSummaryDto | None
 
     @classmethod
-    def from_model(cls, user: User, organization: Organization) -> "UserDto":
+    def from_model(cls, user: User, organization: Organization | None) -> "UserDto":
         return cls(
             id=str(user.id),
             email=user.email,
             display_name_en=user.display_name_en,
             display_name_ar=user.display_name_ar,
             role=user.role,
-            organization=OrganizationSummaryDto.from_model(organization),
+            organization=(
+                OrganizationSummaryDto.from_model(organization)
+                if organization is not None
+                else None
+            ),
         )
 
 

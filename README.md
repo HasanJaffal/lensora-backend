@@ -84,7 +84,9 @@ docker compose up --build
 ```
 
 Compose starts `db` first, waits for its `pg_isready` healthcheck, then builds and starts `api`.
-The API is published on `API_PORT` (default `8000`):
+On every start, the `api` container runs `alembic upgrade head` against `DATABASE_URL` before
+`uvicorn` starts serving — migrations are applied automatically, there is no separate manual step
+for the compose workflow. The API is published on `API_PORT` (default `8000`):
 
 ```bash
 curl http://127.0.0.1:8000/health
@@ -128,6 +130,12 @@ make makemigration name="add patients"   # then review migrations/versions/<rev>
 make migrate                     # apply to head
 ```
 
+`make migrate` (`alembic upgrade head` against the host-visible `DATABASE_URL`) is only needed for
+the bare-host `uv run uvicorn` workflow, or to apply a migration you just authored against the
+compose database before rebuilding the image. Running the full stack via `docker compose up`
+applies migrations automatically on container start (see "Running with Docker" above) — no manual
+step required there.
+
 The migration URL is injected from `DATABASE_URL` in `migrations/env.py`; it is never hardcoded in
 `alembic.ini`. When running Alembic against the compose database from the host, point `DATABASE_URL`
 at `localhost` (the `db` hostname only resolves inside the compose network).
@@ -151,3 +159,18 @@ fails cleanly rather than duplicating data. `--deposit-percent` is optional (def
 sets that organization's lens-order deposit fraction — deposit percent is a per-organization value,
 not a global setting. Run this against a migrated database (`make migrate` first); it requires
 `DATABASE_URL` to be reachable the same way `make migrate` does.
+
+## Provisioning the platform admin
+
+The single `PLATFORM_ADMIN` account (used to log into `/platform-admin` and manage
+organizations from the app) is provisioned the same way, by a developer with database access —
+never from an environment variable and never seeded at app startup:
+
+```bash
+uv run python -m app.management.provision_platform_admin \
+    --email admin@lensora.example --password change-me \
+    --display-name-en "Platform Admin" --display-name-ar "مسؤول المنصة"
+```
+
+Re-running with an existing email fails cleanly unless `--rotate-password` is passed, in which case
+it updates the password and display names on the existing account instead of creating a new one.

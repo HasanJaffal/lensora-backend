@@ -24,7 +24,9 @@ class AuthService:
         self._users = users
         self._organizations = organizations
 
-    async def authenticate(self, email: str, password: str) -> tuple[str, User, Organization]:
+    async def authenticate(
+        self, email: str, password: str
+    ) -> tuple[str, User, Organization | None]:
         user = await self._users.get_by_email(email)
         if user is None or not verify_password(password, user.hashed_password):
             raise InvalidCredentialsError("Invalid email or password")
@@ -32,7 +34,7 @@ class AuthService:
         organization = await self.get_organization_for(user)
         return create_access_token(str(user.id)), user, organization
 
-    async def resolve_token(self, token: str) -> tuple[User, Organization]:
+    async def resolve_token(self, token: str) -> tuple[User, Organization | None]:
         try:
             subject = decode_access_token(token)
             user_id = uuid.UUID(subject)
@@ -46,7 +48,9 @@ class AuthService:
         organization = await self.get_organization_for(user)
         return user, organization
 
-    async def get_organization_for(self, user: User) -> Organization:
+    async def get_organization_for(self, user: User) -> Organization | None:
+        if user.organization_id is None:
+            return None
         organization = await self._organizations.get_by_id(user.organization_id)
         if organization is None:
             raise SessionExpiredError("Session has expired")

@@ -5,7 +5,7 @@ from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.common.exceptions import SessionExpiredError
+from app.common.exceptions import SessionExpiredError, UnauthorizedError
 from app.common.tenant_context import TenantContext, tenant_context
 from app.db.engine import get_sessionmaker
 from app.db.session import get_session
@@ -57,11 +57,16 @@ async def require_auth(_: CurrentUser) -> None:
 async def get_tenant_context(current_user: CurrentUser) -> AsyncIterator[TenantContext]:
     """Bind a ``TenantContext`` derived from the authenticated account for the request lifetime.
 
+    Rejects ``PLATFORM_ADMIN`` principals outright: they have no ``organization_id`` and must
+    never be scoped to a tenant.
+
     Must be an async generator: FastAPI runs sync dependencies in a threadpool, where each
     call into the generator can land on a different thread and break ``ContextVar`` token
     reset (tokens are bound to the context that created them). Async dependencies instead
     run on the event loop task, keeping the whole generator in one consistent context.
     """
+    if current_user.organization_id is None:
+        raise UnauthorizedError("Platform admin accounts cannot access tenant-scoped routes")
     ctx = TenantContext(
         organization_id=current_user.organization_id,
         user_id=current_user.id,
@@ -72,3 +77,13 @@ async def get_tenant_context(current_user: CurrentUser) -> AsyncIterator[TenantC
 
 
 TenantContextDep = Annotated[TenantContext, Depends(get_tenant_context)]
+
+
+async def require_platform_admin(current_user: CurrentUser) -> None:
+    """Router-level guard: use in ``APIRouter(dependencies=[Depends(require_platform_admin)])``.
+
+    Checks the role directly, independent of ``TenantContext`` — platform admins have no
+    organization to scope to.
+    """
+    if current_user.role != UserRole.PLATFORM_ADMIN:
+        raise UnauthorizedError("Platform admin access required")
