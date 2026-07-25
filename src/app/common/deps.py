@@ -5,7 +5,7 @@ from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.common.exceptions import SessionExpiredError, UnauthorizedError
+from app.common.exceptions import UnauthorizedError
 from app.common.tenant_context import TenantContext, tenant_context
 from app.db.engine import get_sessionmaker
 from app.db.session import get_session
@@ -42,7 +42,7 @@ async def get_current_user(
     service: AuthServiceDep,
 ) -> User:
     if credentials is None:
-        raise SessionExpiredError("Session has expired")
+        raise UnauthorizedError("Authentication credentials were not provided")
     user, _ = await service.resolve_token(credentials.credentials)
     return user
 

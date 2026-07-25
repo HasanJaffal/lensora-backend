@@ -143,4 +143,4 @@ async def test_patients_endpoint_requires_authentication(client: AsyncClient) ->
     response = await client.get("/api/v1/patients")
 
     assert response.status_code == 401
-    assert response.json()["error"]["code"] == "auth.sessionExpired"
+    assert response.json()["error"]["code"] == "auth.unauthorized"

@@ -177,14 +177,14 @@ async def test_me_with_valid_token_returns_current_user(
     assert body["organization"]["id"] == str(doctor.organization_id)
 
 
-async def test_me_without_token_returns_session_expired(
+async def test_me_without_token_returns_unauthorized(
     auth_client: tuple[AsyncClient, User],
 ) -> None:
     client, _ = auth_client
     response = await client.get("/api/v1/auth/me")
 
     assert response.status_code == 401
-    assert response.json()["error"]["code"] == "auth.sessionExpired"
+    assert response.json()["error"]["code"] == "auth.unauthorized"
 
 
 async def test_me_with_malformed_token_returns_session_expired(
