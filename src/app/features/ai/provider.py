@@ -1,19 +1,13 @@
-import base64
 import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from app.features.ai.context import AssistantContext, StylingContext
 from app.features.ai.schemas import ChatMessage, Locale
 
 if TYPE_CHECKING:
-    from anthropic.types import (
-        ContentBlockParam,
-        Message,
-        MessageParam,
-        ThinkingConfigDisabledParam,
-    )
+    from google.genai.types import Content, GenerateContentResponse
 
 AnswerType = str  # one of: "short" | "long" | "checklist"
 
@@ -28,10 +22,10 @@ class ExtractedQuestion:
 
 
 class AIProvider(ABC):
-    """Swappable AI strategy (Open/Closed, Liskov-substitutable).
+    """Contract shared by the Gemini client and its deterministic fallback.
 
-    Feature code depends on this abstraction, never a concrete client. Every method has a
-    deterministic counterpart in :class:`FallbackProvider` so the workflow never blocks (NFR-4).
+    Feature code depends on this abstraction, never a concrete client, so every method has a
+    counterpart in :class:`FallbackProvider` and the workflow never blocks (NFR-4).
     """
 
     @abstractmethod
@@ -88,70 +82,99 @@ class FallbackProvider(AIProvider):
         return list(_FALLBACK_QUESTIONS)
 
 
-_THINKING_OFF: "ThinkingConfigDisabledParam" = {"type": "disabled"}
-
-
-class AnthropicProvider(AIProvider):
-    """Real provider backed by the latest Claude Sonnet model via the Anthropic SDK."""
+class GeminiProvider(AIProvider):
+    """Real provider backed by Gemini via the google-genai SDK."""
 
     def __init__(self, *, api_key: str, model: str) -> None:
-        from anthropic import AsyncAnthropic
+        from google import genai
 
-        self._client = AsyncAnthropic(api_key=api_key)
+        self._client = genai.Client(api_key=api_key)
         self._model = model
 
     async def chat(
         self, messages: list[ChatMessage], context: AssistantContext, locale: Locale
     ) -> str:
-        conversation: list[MessageParam] = [
-            {"role": m.role, "content": m.content} for m in messages
-        ]
-        response = await self._client.messages.create(
-            model=self._model,
-            max_tokens=400,
-            thinking=_THINKING_OFF,
-            system=_chat_system_prompt(context, locale),
-            messages=conversation,
+        conversation = [_chat_turn(message) for message in messages]
+        return await self._generate(
+            contents=conversation,
+            system_instruction=_chat_system_prompt(context, locale),
+            max_output_tokens=400,
         )
-        return _first_text(response)
 
     async def styling_advice(self, context: StylingContext, locale: Locale) -> list[str]:
-        conversation: list[MessageParam] = [
-            {"role": "user", "content": _styling_user_prompt(context)}
-        ]
-        response = await self._client.messages.create(
-            model=self._model,
-            max_tokens=400,
-            thinking=_THINKING_OFF,
-            system=_styling_system_prompt(locale),
-            messages=conversation,
+        text = await self._generate(
+            contents=[_user_turn(_styling_user_prompt(context))],
+            system_instruction=_styling_system_prompt(locale),
+            max_output_tokens=400,
         )
-        tips = [line.strip("-• ").strip() for line in _first_text(response).splitlines()]
+        tips = [line.strip("-• ").strip() for line in text.splitlines()]
         return [tip for tip in tips if tip][:3]
 
     async def extract_questions(
         self, document: bytes, filename: str, content_type: str
     ) -> list[ExtractedQuestion]:
-        content: list[ContentBlockParam] = [
-            _document_block(document, content_type),
-            {"type": "text", "text": _EXTRACTION_INSTRUCTION},
-        ]
-        conversation: list[MessageParam] = [{"role": "user", "content": content}]
-        response = await self._client.messages.create(
-            model=self._model,
-            max_tokens=2000,
-            thinking=_THINKING_OFF,
-            system=_EXTRACTION_SYSTEM_PROMPT,
-            messages=conversation,
+        from google.genai import types
+
+        document_turn = types.Content(
+            role="user",
+            parts=[
+                types.Part.from_bytes(data=document, mime_type=content_type),
+                types.Part.from_text(text=_EXTRACTION_INSTRUCTION),
+            ],
         )
-        return _parse_extracted_questions(_first_text(response))
+        text = await self._generate(
+            contents=[document_turn],
+            system_instruction=_EXTRACTION_SYSTEM_PROMPT,
+            max_output_tokens=2000,
+            response_mime_type="application/json",
+        )
+        return _parse_extracted_questions(text)
+
+    async def _generate(
+        self,
+        *,
+        contents: list["Content"],
+        system_instruction: str,
+        max_output_tokens: int,
+        response_mime_type: str | None = None,
+    ) -> str:
+        from google.genai import types
+
+        response = await self._client.aio.models.generate_content(
+            model=self._model,
+            contents=contents,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                max_output_tokens=max_output_tokens,
+                response_mime_type=response_mime_type,
+                # Flash models reason by default, which would spend the token budget before any
+                # answer text is emitted; these prompts need the output, not the reasoning.
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
+            ),
+        )
+        return _response_text(response)
 
 
-def _first_text(response: "Message") -> str:
-    for block in response.content:
-        if block.type == "text":
-            return block.text.strip()
-    raise ValueError("AI response contained no text block")
+def _chat_turn(message: ChatMessage) -> "Content":
+    # Gemini names the assistant side of a conversation "model", not "assistant".
+    return _turn("user" if message.role == "user" else "model", message.content)
+
+
+def _user_turn(text: str) -> "Content":
+    return _turn("user", text)
+
+
+def _turn(role: str, text: str) -> "Content":
+    from google.genai import types
+
+    return types.Content(role=role, parts=[types.Part.from_text(text=text)])
+
+
+def _response_text(response: "GenerateContentResponse") -> str:
+    text = response.text
+    if not text or not text.strip():
+        raise ValueError("AI response contained no text")
+    return text.strip()
 
 
 def _chat_system_prompt(context: AssistantContext, locale: Locale) -> str:
@@ -203,20 +226,6 @@ _EXTRACTION_INSTRUCTION = (
     '"textEn", "textAr", "answerType" (short|long|checklist). Translate each question into both '
     "English and Arabic."
 )
-
-
-def _document_block(document: bytes, content_type: str) -> "ContentBlockParam":
-    data = base64.standard_b64encode(document).decode("ascii")
-    is_pdf = content_type == "application/pdf"
-    # Single boundary cast: content_type is a runtime-validated PDF/image MIME string,
-    # while the SDK types media_type as a closed Literal.
-    return cast(
-        "ContentBlockParam",
-        {
-            "type": "document" if is_pdf else "image",
-            "source": {"type": "base64", "media_type": content_type, "data": data},
-        },
-    )
 
 
 def _parse_extracted_questions(payload: str) -> list[ExtractedQuestion]:

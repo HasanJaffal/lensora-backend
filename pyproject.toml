@@ -14,8 +14,8 @@ dependencies = [
     "pyjwt>=2.10",
     "argon2-cffi>=23.1",
     "email-validator>=2.2",
-    "anthropic>=0.116.0",
     "python-multipart>=0.0.32",
+    "google-genai>=1.0.0",
 ]
 
 [dependency-groups]

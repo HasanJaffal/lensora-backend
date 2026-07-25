@@ -10,8 +10,8 @@ Requirements: [`../business_requirement.md`](../business_requirement.md). Plan: 
 
 1. **SOLID, always.**
    - *Single responsibility* — a function, class, or component does one thing. Split data access, business logic, and presentation.
-   - *Open/closed* — extend via new implementations, not by editing stable code (e.g. the AI provider strategy).
-   - *Liskov* — substitutable implementations honor the same contract (the fallback AI provider must be a drop-in for the real one).
+   - *Open/closed* — extend via new implementations, not by editing stable code.
+   - *Liskov* — substitutable implementations honor the same contract (the fallback AI provider must be a drop-in for the Gemini one).
    - *Interface segregation* — keep interfaces/protocols narrow and purpose-built.
    - *Dependency inversion* — depend on abstractions (protocols, interfaces), inject them; never construct concrete dependencies inside business logic.
 
@@ -38,7 +38,7 @@ Requirements: [`../business_requirement.md`](../business_requirement.md). Plan: 
 - **Response envelope:** every endpoint returns the shared envelope (`success/data/error/meta`). Use the `ok()` / `fail()` helpers. Errors carry a dot-namespaced `code` from the central registry and the correct HTTP status via the domain exception hierarchy. Keep codes in sync with the frontend `backend-error-keys`.
 - **Migrations are code-first.** Change models, autogenerate with Alembic, then **review the migration by hand** (renames autogenerate as drop+add). One migration per logical change; never edit an applied migration. Seed data lives in `db/seed.py` / `db/seeds/`, never in migrations.
 - **Config from settings only.** All configuration via `pydantic-settings` reading the environment. No literals for URLs, secrets, ports, keys.
-- **AI features never block the workflow.** Every AI call has a deterministic fallback (NFR-4); depend on the `AIProvider` abstraction, never a concrete client, in feature code.
+- **AI features never block the workflow.** Gemini is the only supported AI service; every AI call has a deterministic fallback (NFR-4). Depend on the `AIProvider` abstraction, never a concrete client, in feature code.
 - **Async throughout.** Async engine, async sessions, `async def` endpoints and services. No blocking I/O in the event loop.
 - **Typing:** full type hints; `mypy` clean. No `Any` unless unavoidable and justified.
 - **Bilingual by construction:** persist `*_en` / `*_ar` fields; do not concatenate or hardcode language in models.

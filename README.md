@@ -67,7 +67,7 @@ cp .env.example .env
 
 Settings keys: `APP_ENV`, `API_PORT`, `DATABASE_URL`, `POSTGRES_USER`, `POSTGRES_PASSWORD`,
 `POSTGRES_DB`, `SECRET_KEY`, `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRES_MINUTES`, `CORS_ORIGINS`,
-`AI_PROVIDER`, `AI_API_KEY`, `AI_MODEL`.
+`GEMINI_API_KEY`, `GEMINI_MODEL`.
 
 There is no environment-level seed account and no global deposit setting: every organization and
 its admin account come from an explicit `provision_organization` run (below), and the deposit

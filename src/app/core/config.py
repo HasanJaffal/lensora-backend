@@ -18,9 +18,8 @@ class Settings(BaseSettings):
     secret_key: str | None = Field(default=None, alias="SECRET_KEY")
     jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
     access_token_expires_minutes: int = Field(default=60 * 24, alias="ACCESS_TOKEN_EXPIRES_MINUTES")
-    ai_provider: str = Field(default="anthropic", alias="AI_PROVIDER")
-    ai_api_key: str | None = Field(default=None, alias="AI_API_KEY")
-    ai_model: str = Field(default="claude-sonnet-5", alias="AI_MODEL")
+    gemini_api_key: str | None = Field(default=None, alias="GEMINI_API_KEY")
+    gemini_model: str = Field(default="gemini-2.5-flash", alias="GEMINI_MODEL")
 
     @field_validator("cors_origins", mode="before")
     @classmethod
