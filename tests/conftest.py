@@ -199,6 +199,36 @@ async def two_org_db_sessionmaker() -> AsyncIterator[
 
 
 @pytest_asyncio.fixture
+async def anonymous_client(
+    two_org_db_sessionmaker: tuple[
+        async_sessionmaker[AsyncSession], ProvisionedTenant, ProvisionedTenant
+    ],
+) -> AsyncIterator[AsyncClient]:
+    """Unauthenticated client for the public storefront.
+
+    Deliberately does not override ``get_current_user``: the storefront must work with no
+    principal at all, so leaving the real dependency in place proves the routes never
+    require one.
+    """
+    sessionmaker, _org_a, _org_b = two_org_db_sessionmaker
+    app = create_app()
+
+    async def override_get_session() -> AsyncIterator[AsyncSession]:
+        async with sessionmaker() as session:
+            try:
+                yield session
+            except Exception:
+                await session.rollback()
+                raise
+
+    app.dependency_overrides[get_session] = override_get_session
+    app.dependency_overrides[get_uow_sessionmaker] = lambda: sessionmaker
+    transport = ASGITransport(app=app, raise_app_exceptions=False)
+    async with AsyncClient(transport=transport, base_url="http://test") as async_client:
+        yield async_client
+
+
+@pytest_asyncio.fixture
 async def org_a_client(
     two_org_db_sessionmaker: tuple[
         async_sessionmaker[AsyncSession], ProvisionedTenant, ProvisionedTenant
