@@ -72,6 +72,11 @@ class OrganizationSlugTakenError(ConflictError):
     default_code = ErrorCode.ORGANIZATION_SLUG_TAKEN
 
 
+class OrganizationDeactivatedError(AppError):
+    http_status = HTTPStatus.FORBIDDEN
+    default_code = ErrorCode.ORGANIZATION_DEACTIVATED
+
+
 class TenantContextMissingError(AppError):
     """Raised when code that requires tenant scoping runs with no ``TenantContext`` set."""
 

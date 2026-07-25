@@ -162,9 +162,11 @@ not a global setting. Run this against a migrated database (`make migrate` first
 
 ## Provisioning the platform admin
 
-The single `PLATFORM_ADMIN` account (used to log into `/platform-admin` and manage
-organizations from the app) is provisioned the same way, by a developer with database access —
-never from an environment variable and never seeded at app startup:
+The single `PLATFORM_ADMIN` account is provisioned the same way, by a developer with database
+access — never from an environment variable and never seeded at app startup. It signs in through
+the same `/login` form as any tenant admin and lands in the platform-admin section, which has its
+own sidebar: a **Dashboard** tab (platform-wide organization counts) and an **Organization
+Management** tab (list organizations, provision new ones, activate/deactivate them).
 
 ```bash
 uv run python -m app.management.provision_platform_admin \

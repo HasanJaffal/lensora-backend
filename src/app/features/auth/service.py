@@ -3,6 +3,7 @@ import uuid
 from app.common.exceptions import (
     AccountDisabledError,
     InvalidCredentialsError,
+    OrganizationDeactivatedError,
     SessionExpiredError,
 )
 from app.core.security import (
@@ -32,6 +33,7 @@ class AuthService:
             raise InvalidCredentialsError("Invalid email or password")
         self._ensure_active(user)
         organization = await self.get_organization_for(user)
+        self._ensure_organization_active(organization)
         return create_access_token(str(user.id)), user, organization
 
     async def resolve_token(self, token: str) -> tuple[User, Organization | None]:
@@ -46,6 +48,7 @@ class AuthService:
             raise SessionExpiredError("Session has expired")
         self._ensure_active(user)
         organization = await self.get_organization_for(user)
+        self._ensure_organization_active(organization)
         return user, organization
 
     async def get_organization_for(self, user: User) -> Organization | None:
@@ -60,3 +63,9 @@ class AuthService:
     def _ensure_active(user: User) -> None:
         if not user.is_active:
             raise AccountDisabledError("Account is disabled")
+
+    @staticmethod
+    def _ensure_organization_active(organization: Organization | None) -> None:
+        """Platform admins have no organization, so they are never gated by this check."""
+        if organization is not None and not organization.is_active:
+            raise OrganizationDeactivatedError("Organization is deactivated")

@@ -12,3 +12,4 @@ class Organization(Entity):
     name: Mapped[str] = mapped_column(String(255))
     slug: Mapped[str] = mapped_column(String(100), unique=True, index=True)
     deposit_percent: Mapped[Decimal] = mapped_column(Numeric(precision=5, scale=4))
+    is_active: Mapped[bool] = mapped_column(default=True)

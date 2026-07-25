@@ -13,6 +13,7 @@ class OrganizationDto(CamelModel):
     name: str
     slug: str
     deposit_percent: Decimal
+    is_active: bool
     admin_email: str
     admin_display_name_en: str
     admin_display_name_ar: str
@@ -25,6 +26,7 @@ class OrganizationDto(CamelModel):
             name=organization.name,
             slug=organization.slug,
             deposit_percent=organization.deposit_percent,
+            is_active=organization.is_active,
             admin_email=admin.email,
             admin_display_name_en=admin.display_name_en,
             admin_display_name_ar=admin.display_name_ar,
@@ -40,3 +42,14 @@ class CreateOrganizationRequest(CamelModel):
     admin_password: str = Field(min_length=8)
     admin_display_name_en: str = Field(min_length=1)
     admin_display_name_ar: str = Field(min_length=1)
+
+
+class SetOrganizationStatusRequest(CamelModel):
+    is_active: bool
+
+
+class PlatformAdminDashboardDto(CamelModel):
+    total_organizations: int
+    active_organizations: int
+    inactive_organizations: int
+    organizations_created_this_month: int

@@ -8,7 +8,12 @@ from app.common.envelope import Envelope, Meta, ok
 from app.common.pagination import PageParams
 from app.features.auth.repository import UserRepository
 from app.features.organizations.repository import OrganizationRepository
-from app.features.platform_admin.schemas import CreateOrganizationRequest, OrganizationDto
+from app.features.platform_admin.schemas import (
+    CreateOrganizationRequest,
+    OrganizationDto,
+    PlatformAdminDashboardDto,
+    SetOrganizationStatusRequest,
+)
 from app.features.platform_admin.service import PlatformAdminService
 
 router = APIRouter(
@@ -48,3 +53,17 @@ async def get_organization(
     organization_id: uuid.UUID, service: PlatformAdminServiceDep
 ) -> Envelope[OrganizationDto]:
     return ok(await service.get_organization(organization_id))
+
+
+@router.patch("/organizations/{organization_id}/status")
+async def set_organization_status(
+    organization_id: uuid.UUID,
+    body: SetOrganizationStatusRequest,
+    service: PlatformAdminServiceDep,
+) -> Envelope[OrganizationDto]:
+    return ok(await service.set_organization_status(organization_id, is_active=body.is_active))
+
+
+@router.get("/dashboard")
+async def get_dashboard(service: PlatformAdminServiceDep) -> Envelope[PlatformAdminDashboardDto]:
+    return ok(await service.get_dashboard_summary())

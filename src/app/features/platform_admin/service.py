@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,7 +12,11 @@ from app.features.organizations.service import (
     OrganizationProvisioningRequest,
     OrganizationProvisioningService,
 )
-from app.features.platform_admin.schemas import CreateOrganizationRequest, OrganizationDto
+from app.features.platform_admin.schemas import (
+    CreateOrganizationRequest,
+    OrganizationDto,
+    PlatformAdminDashboardDto,
+)
 
 
 class PlatformAdminService:
@@ -73,3 +78,30 @@ class PlatformAdminService:
         await seed_tips(self._session, provisioned.organization.id)
         await self._session.commit()
         return OrganizationDto.from_models(provisioned.organization, provisioned.admin_account)
+
+    async def set_organization_status(
+        self, organization_id: uuid.UUID, *, is_active: bool
+    ) -> OrganizationDto:
+        organization = await self._organizations.get_by_id(organization_id)
+        if organization is None:
+            raise NotFoundError(f"Organization {organization_id} not found")
+        admin = await self._users.get_by_organization_id(organization_id)
+        if admin is None:
+            raise NotFoundError(f"Organization {organization_id} not found")
+        organization.is_active = is_active
+        await self._session.commit()
+        return OrganizationDto.from_models(organization, admin)
+
+    async def get_dashboard_summary(self) -> PlatformAdminDashboardDto:
+        now = datetime.now(UTC)
+        total = await self._organizations.count_all()
+        active = await self._organizations.count_by_active_status(is_active=True)
+        created_this_month = await self._organizations.count_created_since(
+            created_since=now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        )
+        return PlatformAdminDashboardDto(
+            total_organizations=total,
+            active_organizations=active,
+            inactive_organizations=total - active,
+            organizations_created_this_month=created_this_month,
+        )

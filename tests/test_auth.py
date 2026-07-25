@@ -32,12 +32,26 @@ def _make_doctor(*, is_active: bool = True) -> User:
     return user
 
 
-def _make_organization(organization_id: uuid.UUID) -> Organization:
+def _make_platform_admin() -> User:
+    return User(
+        id=uuid.uuid4(),
+        organization_id=None,
+        email="platform@lensora.com",
+        hashed_password=hash_password(DOCTOR_PASSWORD),
+        display_name_en="Platform Owner",
+        display_name_ar="مالك المنصة",
+        role=UserRole.PLATFORM_ADMIN,
+        is_active=True,
+    )
+
+
+def _make_organization(organization_id: uuid.UUID, *, is_active: bool = True) -> Organization:
     return Organization(
         id=organization_id,
         name="Lensora Optics",
         slug="lensora-optics",
         deposit_percent=Decimal("0.2000"),
+        is_active=is_active,
     )
 
 
@@ -60,9 +74,13 @@ class _InMemoryOrganizationRepository(OrganizationRepository):
         return next((org for org in self._organizations if org.id == organization_id), None)
 
 
-def _client_for(users: list[User]) -> tuple[FastAPI, User]:
+def _client_for(users: list[User], *, organization_is_active: bool = True) -> tuple[FastAPI, User]:
     app = create_app()
-    organizations = [_make_organization(user.organization_id) for user in users]
+    organizations = [
+        _make_organization(user.organization_id, is_active=organization_is_active)
+        for user in users
+        if user.organization_id is not None
+    ]
     app.dependency_overrides[get_auth_service] = lambda: AuthService(
         _InMemoryUserRepository(users), _InMemoryOrganizationRepository(organizations)
     )
@@ -202,6 +220,50 @@ async def test_login_for_disabled_account_returns_account_disabled() -> None:
 
     assert response.status_code == 403
     assert response.json()["error"]["code"] == "auth.accountDisabled"
+
+
+async def test_login_for_deactivated_organization_is_rejected() -> None:
+    doctor = _make_doctor()
+    app, _ = _client_for([doctor], organization_is_active=False)
+    transport = ASGITransport(app=app, raise_app_exceptions=False)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            "/api/v1/auth/login",
+            json={"email": doctor.email, "password": DOCTOR_PASSWORD},
+        )
+
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "organization.deactivated"
+
+
+async def test_existing_session_is_revoked_when_organization_is_deactivated() -> None:
+    doctor = _make_doctor()
+    app, _ = _client_for([doctor], organization_is_active=False)
+    transport = ASGITransport(app=app, raise_app_exceptions=False)
+    token = create_access_token(str(doctor.id))
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get(
+            "/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"}
+        )
+
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "organization.deactivated"
+
+
+async def test_platform_admin_login_is_unaffected_by_organization_status() -> None:
+    platform_admin = _make_platform_admin()
+    app, _ = _client_for([platform_admin], organization_is_active=False)
+    transport = ASGITransport(app=app, raise_app_exceptions=False)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            "/api/v1/auth/login",
+            json={"email": platform_admin.email, "password": DOCTOR_PASSWORD},
+        )
+
+    assert response.status_code == 200
+    body = response.json()["data"]
+    assert body["user"]["role"] == "platformAdmin"
+    assert body["user"]["organization"] is None
 
 
 async def test_logout_acknowledges_for_authenticated_user(

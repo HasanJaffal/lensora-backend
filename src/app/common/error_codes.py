@@ -23,6 +23,7 @@ class ErrorCode(StrEnum):
 
     # Organizations
     ORGANIZATION_SLUG_TAKEN = "organization.slugTaken"
+    ORGANIZATION_DEACTIVATED = "organization.deactivated"
 
     # Tenancy
     TENANT_FORBIDDEN = "tenant.forbidden"
