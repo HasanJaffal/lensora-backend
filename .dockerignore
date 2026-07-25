@@ -9,6 +9,5 @@ __pycache__/
 .ruff_cache/
 tests/
 README.md
-Makefile
 Dockerfile
 .dockerignore

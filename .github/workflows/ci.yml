@@ -23,10 +23,10 @@ jobs:
         run: uv sync --locked
 
       - name: Lint (ruff)
-        run: make lint
+        run: uv run ruff check
 
       - name: Typecheck (mypy)
-        run: make typecheck
+        run: uv run mypy src
 
       - name: Test (pytest)
-        run: make test
+        run: uv run pytest

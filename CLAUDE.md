@@ -97,6 +97,6 @@ Anywhere else in the codebase, write out the full word.
 - [ ] Behavior matches the referenced FR/NFR in [`../business_requirement.md`](../business_requirement.md).
 - [ ] Layering, DTO separation, and naming rules above are honored.
 - [ ] Tenancy invariants honored: no unscoped query/insert against a tenant-owned model.
-- [ ] `ruff check` + `mypy` + `pytest` pass (`make lint typecheck test`).
+- [ ] `uv run ruff check` + `uv run mypy src` + `uv run pytest` pass.
 - [ ] AI paths verified with the provider disabled.
 - [ ] No hardcoded config, no stray comments, no `any`/`type: ignore`, no unhandled error paths.

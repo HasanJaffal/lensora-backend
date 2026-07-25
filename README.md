@@ -31,29 +31,36 @@ translation layer** (`backend-error-keys.ts`) — treat additions or renames as 
 
 ## Requirements
 
-- [uv](https://docs.astral.sh/uv/) (manages the Python 3.12 toolchain and dependencies)
-
-## Setup
-
-```bash
-uv sync
-```
-
-This creates a virtual environment, installs runtime + dev dependencies, and installs the `app`
-package in editable mode.
+- [Docker](https://docs.docker.com/get-docker/) with Compose — **the only supported way to run the
+  backend locally**.
+- [uv](https://docs.astral.sh/uv/) — needed only for the quality gate (lint/typecheck/test) and for
+  authoring migrations, not for running the app.
 
 ## Running
 
+`docker compose` is the single local-development run path for the backend. There is no bare-host
+`uvicorn` workflow.
+
 ```bash
-uv run uvicorn app.main:app --reload
+cp .env.example .env   # first time only
+docker compose up --build
 ```
 
-Then check the health endpoint:
+Compose starts `db` first, waits for its `pg_isready` healthcheck, then builds and starts `api`. On
+every start the `api` container runs `alembic upgrade head` against `DATABASE_URL` before `uvicorn`
+serves — migrations are applied automatically, there is no separate manual step. The API is
+published on `API_PORT` (default `8000`):
 
 ```bash
 curl http://127.0.0.1:8000/health
 # {"success": true, "data": {"status": "ok"}, "error": null, "meta": null}
 ```
+
+Both services read configuration exclusively from this repo's `.env`; nothing is baked into the
+image. To publish on a different host port, set `API_PORT` before running compose.
+
+The frontend is **not** part of this compose stack — it runs locally with `npm run dev` against the
+composed API. See [`../lensora-frontend/README.md`](../lensora-frontend/README.md).
 
 ## Configuration
 
@@ -73,43 +80,25 @@ There is no environment-level seed account and no global deposit setting: every 
 its admin account come from an explicit `provision_organization` run (below), and the deposit
 percentage is a per-organization value passed at provisioning time.
 
-## Running with Docker
-
-The backend and a PostgreSQL database run together via [`docker-compose.yml`](docker-compose.yml)
-in this repo:
-
-```bash
-cp .env.example .env   # first time only
-docker compose up --build
-```
-
-Compose starts `db` first, waits for its `pg_isready` healthcheck, then builds and starts `api`.
-On every start, the `api` container runs `alembic upgrade head` against `DATABASE_URL` before
-`uvicorn` starts serving — migrations are applied automatically, there is no separate manual step
-for the compose workflow. The API is published on `API_PORT` (default `8000`):
-
-```bash
-curl http://127.0.0.1:8000/health
-```
-
-Both services read configuration exclusively from this repo's `.env`; nothing is baked into the
-image. To publish on a different host port, set `API_PORT` before running compose.
-
 ## Developer tasks
 
-A `Makefile` wraps the common commands. On systems without `make`, run the underlying `uv`
-commands directly:
+There is no `Makefile` — run the `uv` commands directly. Running the application is not among them:
+that is `docker compose up` only (see "Running" above).
 
-| Task       | Make target      | Raw command                              |
-|------------|------------------|------------------------------------------|
-| Install    | `make install`   | `uv sync`                                |
-| Lint       | `make lint`      | `uv run ruff check`                      |
-| Type-check | `make typecheck` | `uv run mypy src`                        |
-| Test       | `make test`      | `uv run pytest`                          |
-| Run        | `make run`       | `uv run uvicorn app.main:app --reload`   |
-| Migrate    | `make migrate`   | `uv run alembic upgrade head`            |
-| New migration | `make makemigration name="..."` | `uv run alembic revision --autogenerate -m "..."` |
-| Downgrade  | `make downgrade` | `uv run alembic downgrade -1`            |
+| Task          | Command                                            |
+|---------------|----------------------------------------------------|
+| Install       | `uv sync`                                          |
+| Lint          | `uv run ruff check`                                |
+| Type-check    | `uv run mypy src`                                  |
+| Test          | `uv run pytest`                                    |
+| Quality gate  | `uv run ruff check && uv run mypy src && uv run pytest` |
+| New migration | `uv run alembic revision --autogenerate -m "..."`  |
+| Migrate       | `uv run alembic upgrade head`                      |
+| Downgrade     | `uv run alembic downgrade -1`                      |
+
+`uv sync` creates the virtual environment and installs runtime + dev dependencies with the `app`
+package in editable mode. It is required only for the tasks above; the running app uses the image
+built by compose.
 
 ## Database & migrations
 
@@ -126,15 +115,13 @@ per logical schema change; never edit a migration that has already been applied.
 
 ```bash
 docker compose up -d db          # a running Postgres is required
-make makemigration name="add patients"   # then review migrations/versions/<rev>.py
-make migrate                     # apply to head
+uv run alembic revision --autogenerate -m "add patients"   # review migrations/versions/<rev>.py
+uv run alembic upgrade head      # apply to head
 ```
 
-`make migrate` (`alembic upgrade head` against the host-visible `DATABASE_URL`) is only needed for
-the bare-host `uv run uvicorn` workflow, or to apply a migration you just authored against the
-compose database before rebuilding the image. Running the full stack via `docker compose up`
-applies migrations automatically on container start (see "Running with Docker" above) — no manual
-step required there.
+`uv run alembic upgrade head` from the host is only needed to apply a migration you just authored
+against the compose database without rebuilding. Running the stack via `docker compose up` applies
+migrations automatically on container start (see "Running" above) — no manual step required there.
 
 The migration URL is injected from `DATABASE_URL` in `migrations/env.py`; it is never hardcoded in
 `alembic.ini`. When running Alembic against the compose database from the host, point `DATABASE_URL`
@@ -157,8 +144,10 @@ uv run python -m app.management.provision_organization \
 `--org-slug` and `--admin-email` must each be globally unique; re-running with the same slug/email
 fails cleanly rather than duplicating data. `--deposit-percent` is optional (defaults to `0.40`) and
 sets that organization's lens-order deposit fraction — deposit percent is a per-organization value,
-not a global setting. Run this against a migrated database (`make migrate` first); it requires
-`DATABASE_URL` to be reachable the same way `make migrate` does.
+not a global setting. Run this against a migrated database; it requires `DATABASE_URL` to be
+reachable the same way `uv run alembic upgrade head` does. With the stack already running, the
+equivalent inside the container is
+`docker compose exec api python -m app.management.provision_organization ...`.
 
 ## Provisioning the platform admin
 
