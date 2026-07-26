@@ -101,3 +101,38 @@ class PayloadTooLargeError(AppError):
 class AIUnavailableError(AppError):
     http_status = HTTPStatus.SERVICE_UNAVAILABLE
     default_code = ErrorCode.AI_UNAVAILABLE
+
+
+class AttachmentNotFoundError(NotFoundError):
+    default_code = ErrorCode.ATTACHMENT_NOT_FOUND
+
+
+class AttachmentInvalidFolderError(ValidationError):
+    default_code = ErrorCode.ATTACHMENT_INVALID_FOLDER
+
+
+class AttachmentTooLargeError(AppError):
+    http_status = HTTPStatus.REQUEST_ENTITY_TOO_LARGE
+    default_code = ErrorCode.ATTACHMENT_FILE_TOO_LARGE
+
+
+class AttachmentUnsupportedTypeError(AppError):
+    http_status = HTTPStatus.UNSUPPORTED_MEDIA_TYPE
+    default_code = ErrorCode.ATTACHMENT_UNSUPPORTED_TYPE
+
+
+class StorageNotConfiguredError(AppError):
+    """Raised when an attachment route is called without Supabase Storage credentials set."""
+
+    http_status = HTTPStatus.SERVICE_UNAVAILABLE
+    default_code = ErrorCode.STORAGE_NOT_CONFIGURED
+
+
+class StorageUnavailableError(AppError):
+    http_status = HTTPStatus.SERVICE_UNAVAILABLE
+    default_code = ErrorCode.STORAGE_UNAVAILABLE
+
+
+class StorageOperationFailedError(AppError):
+    http_status = HTTPStatus.BAD_GATEWAY
+    default_code = ErrorCode.STORAGE_OPERATION_FAILED

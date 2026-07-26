@@ -7,6 +7,7 @@ schema is present before diffing.
 
 from app.db.audit import register_audit_listeners
 from app.db.base import Base
+from app.features.attachments.models import Attachment
 from app.features.auth.models import User
 from app.features.import_forms.models import ImportForm
 from app.features.intake.models import IntakeSubmission
@@ -31,6 +32,7 @@ from app.features.tips.models import Tip
 register_audit_listeners()
 
 __all__ = [
+    "Attachment",
     "Base",
     "ImportForm",
     "IntakeSubmission",

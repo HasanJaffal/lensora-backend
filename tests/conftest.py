@@ -14,11 +14,18 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.pool import StaticPool
 
-from app.common.deps import get_current_user, get_uow_sessionmaker
+from app.common.deps import (
+    SessionDep,
+    TenantContextDep,
+    get_current_user,
+    get_uow_sessionmaker,
+)
 from app.db import seed as seed_module
 from app.db.registry import Base
 from app.db.seeds.organization_defaults import seed_lens_catalog, seed_tips
 from app.db.session import get_session
+from app.features.attachments.router import get_attachment_service
+from app.features.attachments.service import AttachmentService
 from app.features.auth.models import User
 from app.features.auth.repository import UserRepository
 from app.features.organizations.models import Organization
@@ -28,6 +35,7 @@ from app.features.organizations.service import (
     OrganizationProvisioningService,
 )
 from app.main import create_app
+from tests.fake_object_storage import FakeObjectStorage
 
 TEST_ADMIN_PASSWORD = "correct-horse"
 
@@ -124,7 +132,14 @@ async def seeded_admin(db_sessionmaker: async_sessionmaker[AsyncSession]) -> Use
         return result.scalar_one()
 
 
-def _wire_app(db_sessionmaker: async_sessionmaker[AsyncSession], current_user: User) -> FastAPI:
+TEST_SIGNED_URL_EXPIRES_SECONDS = 3600
+
+
+def _wire_app(
+    db_sessionmaker: async_sessionmaker[AsyncSession],
+    current_user: User,
+    object_storage: FakeObjectStorage | None = None,
+) -> FastAPI:
     app = create_app()
 
     async def override_get_session() -> AsyncIterator[AsyncSession]:
@@ -138,6 +153,19 @@ def _wire_app(db_sessionmaker: async_sessionmaker[AsyncSession], current_user: U
     app.dependency_overrides[get_session] = override_get_session
     app.dependency_overrides[get_uow_sessionmaker] = lambda: db_sessionmaker
     app.dependency_overrides[get_current_user] = lambda: current_user
+
+    if object_storage is not None:
+        # Swaps only the storage collaborator; the real service, repository, and tenant
+        # scoping still run, so these tests cover the same code path production does.
+        def override_get_attachment_service(
+            session: SessionDep, tenant_context: TenantContextDep
+        ) -> AttachmentService:
+            return AttachmentService(
+                session, tenant_context, object_storage, TEST_SIGNED_URL_EXPIRES_SECONDS
+            )
+
+        app.dependency_overrides[get_attachment_service] = override_get_attachment_service
+
     return app
 
 
@@ -148,6 +176,24 @@ async def api_client(
 ) -> AsyncIterator[AsyncClient]:
     """Authenticated client wired to the isolated in-memory database."""
     app = _wire_app(db_sessionmaker, seeded_admin)
+    transport = ASGITransport(app=app, raise_app_exceptions=False)
+    async with AsyncClient(transport=transport, base_url="http://test") as async_client:
+        yield async_client
+
+
+@pytest.fixture
+def object_storage() -> FakeObjectStorage:
+    return FakeObjectStorage()
+
+
+@pytest_asyncio.fixture
+async def attachments_client(
+    db_sessionmaker: async_sessionmaker[AsyncSession],
+    seeded_admin: User,
+    object_storage: FakeObjectStorage,
+) -> AsyncIterator[AsyncClient]:
+    """Authenticated client whose attachment routes are backed by in-memory storage."""
+    app = _wire_app(db_sessionmaker, seeded_admin, object_storage)
     transport = ASGITransport(app=app, raise_app_exceptions=False)
     async with AsyncClient(transport=transport, base_url="http://test") as async_client:
         yield async_client
@@ -254,3 +300,31 @@ async def org_b_client(
     transport = ASGITransport(app=app, raise_app_exceptions=False)
     async with AsyncClient(transport=transport, base_url="http://test") as async_client:
         yield async_client
+
+
+@pytest_asyncio.fixture
+async def org_attachment_clients(
+    two_org_db_sessionmaker: tuple[
+        async_sessionmaker[AsyncSession], ProvisionedTenant, ProvisionedTenant
+    ],
+    object_storage: FakeObjectStorage,
+) -> AsyncIterator[tuple[AsyncClient, AsyncClient]]:
+    """Org A and Org B attachment clients sharing one bucket.
+
+    A single storage instance is deliberate: it is what makes a leak observable, since both
+    tenants' objects live in the same bucket exactly as they do in production.
+    """
+    sessionmaker, org_a, org_b = two_org_db_sessionmaker
+    app_a = _wire_app(sessionmaker, org_a.admin_account, object_storage)
+    app_b = _wire_app(sessionmaker, org_b.admin_account, object_storage)
+    async with (
+        AsyncClient(
+            transport=ASGITransport(app=app_a, raise_app_exceptions=False),
+            base_url="http://test",
+        ) as client_a,
+        AsyncClient(
+            transport=ASGITransport(app=app_b, raise_app_exceptions=False),
+            base_url="http://test",
+        ) as client_b,
+    ):
+        yield client_a, client_b

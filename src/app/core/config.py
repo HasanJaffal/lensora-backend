@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     access_token_expires_minutes: int = Field(default=60 * 24, alias="ACCESS_TOKEN_EXPIRES_MINUTES")
     gemini_api_key: str | None = Field(default=None, alias="GEMINI_API_KEY")
     gemini_model: str = Field(default="gemini-2.5-flash", alias="GEMINI_MODEL")
+    supabase_url: str | None = Field(default=None, alias="SUPABASE_URL")
+    supabase_service_role_key: str | None = Field(default=None, alias="SUPABASE_SERVICE_ROLE_KEY")
+    supabase_storage_bucket: str = Field(default="attachments", alias="SUPABASE_STORAGE_BUCKET")
+    attachment_signed_url_expires_seconds: int = Field(
+        default=3600, alias="ATTACHMENT_SIGNED_URL_EXPIRES_SECONDS"
+    )
 
     @field_validator("cors_origins", mode="before")
     @classmethod

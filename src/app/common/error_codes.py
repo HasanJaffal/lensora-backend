@@ -40,3 +40,14 @@ class ErrorCode(StrEnum):
 
     # AI
     AI_UNAVAILABLE = "ai.unavailable"
+
+    # Attachments
+    ATTACHMENT_NOT_FOUND = "attachment.notFound"
+    ATTACHMENT_INVALID_FOLDER = "attachment.invalidFolder"
+    ATTACHMENT_FILE_TOO_LARGE = "attachment.fileTooLarge"
+    ATTACHMENT_UNSUPPORTED_TYPE = "attachment.unsupportedType"
+
+    # Storage
+    STORAGE_NOT_CONFIGURED = "storage.notConfigured"
+    STORAGE_UNAVAILABLE = "storage.unavailable"
+    STORAGE_OPERATION_FAILED = "storage.operationFailed"

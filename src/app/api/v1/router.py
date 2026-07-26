@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.features.ai.router import router as ai_router
+from app.features.attachments.router import router as attachments_router
 from app.features.auth.router import router as auth_router
 from app.features.dashboard.router import router as dashboard_router
 from app.features.import_forms.router import router as imports_router
@@ -25,3 +26,4 @@ api_router.include_router(ai_router)
 api_router.include_router(imports_router)
 api_router.include_router(dashboard_router)
 api_router.include_router(storefront_router)
+api_router.include_router(attachments_router)
