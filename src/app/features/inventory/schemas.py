@@ -4,7 +4,7 @@ from enum import StrEnum
 from pydantic import Field
 
 from app.common.schema import CamelModel
-from app.features.inventory.models import InventoryItem
+from app.features.inventory.models import InventoryCategory, InventoryItem
 from app.features.inventory.status import derive_stock_status, quantity_ratio
 
 
@@ -55,6 +55,19 @@ class InventoryStatsDto(CamelModel):
     low_stock_count: int
     out_of_stock_count: int
     total_value: Decimal
+
+
+class InventoryCreateRequest(CamelModel):
+    category: InventoryCategory
+    name: str = Field(min_length=1, max_length=255)
+    brand: str = Field(min_length=1, max_length=255)
+    spec: str = Field(min_length=1, max_length=255)
+    shape: str | None = Field(default=None, max_length=50)
+    color: str | None = Field(default=None, max_length=50)
+    sku: str = Field(min_length=1, max_length=50)
+    qty: int = Field(ge=0)  # maps to the `quantity` column
+    threshold: int = Field(ge=0)
+    price: Decimal = Field(ge=0)
 
 
 class InventoryUpdateRequest(CamelModel):

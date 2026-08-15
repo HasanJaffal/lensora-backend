@@ -10,6 +10,7 @@ from app.features.inventory.models import InventoryCategory
 from app.features.inventory.repository import InventoryRepository
 from app.features.inventory.schemas import (
     FrameUse,
+    InventoryCreateRequest,
     InventoryItemDto,
     InventoryStatsDto,
     InventoryUpdateRequest,
@@ -48,6 +49,13 @@ async def list_inventory(
     return ok(items)
 
 
+@router.post("")
+async def create_inventory_item(
+    body: InventoryCreateRequest, service: InventoryServiceDep
+) -> Envelope[InventoryItemDto]:
+    return ok(await service.create_item(body))
+
+
 @router.get("/stats")
 async def get_inventory_stats(service: InventoryServiceDep) -> Envelope[InventoryStatsDto]:
     return ok(await service.get_stats())
@@ -76,3 +84,11 @@ async def update_inventory_item(
     service: InventoryServiceDep,
 ) -> Envelope[InventoryItemDto]:
     return ok(await service.update_item(item_id, body))
+
+
+@router.delete("/{item_id}")
+async def delete_inventory_item(
+    item_id: uuid.UUID, service: InventoryServiceDep
+) -> Envelope[None]:
+    await service.delete_item(item_id)
+    return ok(None)

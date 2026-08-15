@@ -1,11 +1,12 @@
 import uuid
 from decimal import Decimal
 
-from app.common.exceptions import NotFoundError
+from app.common.exceptions import InventorySkuTakenError, NotFoundError
 from app.features.inventory.models import InventoryCategory, InventoryItem
 from app.features.inventory.repository import InventoryRepository
 from app.features.inventory.schemas import (
     FrameUse,
+    InventoryCreateRequest,
     InventoryItemDto,
     InventoryStatsDto,
     InventoryUpdateRequest,
@@ -56,6 +57,31 @@ class InventoryService:
 
     async def get_item(self, item_id: uuid.UUID) -> InventoryItemDto:
         return InventoryItemDto.from_model(await self._require_item(item_id))
+
+    async def create_item(self, request: InventoryCreateRequest) -> InventoryItemDto:
+        if await self._items.get_by_sku(request.sku) is not None:
+            raise InventorySkuTakenError(f"SKU '{request.sku}' already exists")
+
+        item = InventoryItem(
+            category=request.category,
+            name=request.name,
+            brand=request.brand,
+            spec=request.spec,
+            shape=request.shape,
+            color=request.color,
+            sku=request.sku,
+            quantity=request.qty,
+            threshold=request.threshold,
+            price=request.price,
+        )
+        self._items.add(item)
+        await self._items.commit()
+        return InventoryItemDto.from_model(item)
+
+    async def delete_item(self, item_id: uuid.UUID) -> None:
+        item = await self._require_item(item_id)
+        await self._items.delete(item)
+        await self._items.commit()
 
     async def update_item(
         self, item_id: uuid.UUID, request: InventoryUpdateRequest

@@ -33,6 +33,7 @@ class ErrorCode(StrEnum):
 
     # Inventory
     INVENTORY_OUT_OF_STOCK = "inventory.outOfStock"
+    INVENTORY_SKU_TAKEN = "inventory.skuTaken"
 
     # Import
     IMPORT_FILE_TOO_LARGE = "import.fileTooLarge"

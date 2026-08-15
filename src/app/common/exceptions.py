@@ -68,6 +68,10 @@ class OutOfStockError(ConflictError):
     default_code = ErrorCode.INVENTORY_OUT_OF_STOCK
 
 
+class InventorySkuTakenError(ConflictError):
+    default_code = ErrorCode.INVENTORY_SKU_TAKEN
+
+
 class OrganizationSlugTakenError(ConflictError):
     default_code = ErrorCode.ORGANIZATION_SLUG_TAKEN
 

@@ -144,6 +144,38 @@ async def test_org_a_cannot_update_org_bs_inventory_item(
     assert unaffected.json()["data"]["qty"] != 0
 
 
+async def test_org_a_cannot_delete_org_bs_inventory_item(
+    org_a_client: AsyncClient, org_b_client: AsyncClient
+) -> None:
+    org_b_item_id = await _first_frame_id(org_b_client)
+
+    response = await org_a_client.delete(f"/api/v1/inventory/{org_b_item_id}")
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "resource.notFound"
+
+    unaffected = await org_b_client.get(f"/api/v1/inventory/{org_b_item_id}")
+    assert unaffected.status_code == 200
+
+
+async def test_both_orgs_can_use_the_same_inventory_sku(
+    org_a_client: AsyncClient, org_b_client: AsyncClient
+) -> None:
+    payload = {
+        "category": "frame",
+        "name": "Shared SKU Frame",
+        "brand": "Testwear",
+        "spec": "52-18-140",
+        "sku": "SHARED-SKU",
+        "qty": 4,
+        "threshold": 1,
+        "price": "99.00",
+    }
+
+    assert (await org_a_client.post("/api/v1/inventory", json=payload)).status_code == 200
+    assert (await org_b_client.post("/api/v1/inventory", json=payload)).status_code == 200
+
+
 async def test_org_a_cannot_read_org_bs_order(
     org_a_client: AsyncClient, org_b_client: AsyncClient
 ) -> None:

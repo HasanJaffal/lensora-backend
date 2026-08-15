@@ -53,5 +53,17 @@ class InventoryRepository(TenantScopedRepository):
     async def get_by_id(self, item_id: uuid.UUID) -> InventoryItem | None:
         return await self.get_scoped(InventoryItem, item_id)
 
+    async def get_by_sku(self, sku: str) -> InventoryItem | None:
+        result = await self._session.execute(
+            self.scoped_select(InventoryItem).where(InventoryItem.sku == sku)
+        )
+        return result.scalar_one_or_none()
+
+    def add(self, item: InventoryItem) -> None:
+        self.add_scoped(item)
+
+    async def delete(self, item: InventoryItem) -> None:
+        await self._session.delete(item)
+
     async def commit(self) -> None:
         await self._session.commit()
