@@ -20,13 +20,13 @@ attach `PaginationMeta` under `meta.pagination` and take the `PageParams` depend
 (`?page=&pageSize=`).
 
 Errors are raised as domain exceptions ([`common/exceptions.py`](src/app/common/exceptions.py):
-`NotFoundError`, `ValidationError`, `ConflictError`, `UnauthorizedError`, `AIUnavailableError`) and
+`NotFoundError`, `ValidationError`, `ConflictError`, `UnauthorizedError`) and
 converted to the error envelope by the handlers in [`common/handlers.py`](src/app/common/handlers.py)
 with the correct HTTP status. Request validation failures return per-field `error.details[]`.
 
 Every `error.code` is a stable, dot-namespaced key from the registry in
 [`common/error_codes.py`](src/app/common/error_codes.py) (e.g. `patient.notFound`,
-`inventory.outOfStock`, `ai.unavailable`). **These codes are the contract with the frontend
+`inventory.outOfStock`, `attachment.notFound`). **These codes are the contract with the frontend
 translation layer** (`backend-error-keys.ts`) — treat additions or renames as API changes.
 
 ## Requirements
@@ -73,8 +73,7 @@ cp .env.example .env
 ```
 
 Settings keys: `APP_ENV`, `API_PORT`, `DATABASE_URL`, `POSTGRES_USER`, `POSTGRES_PASSWORD`,
-`POSTGRES_DB`, `SECRET_KEY`, `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRES_MINUTES`, `CORS_ORIGINS`,
-`GEMINI_API_KEY`, `GEMINI_MODEL`.
+`POSTGRES_DB`, `SECRET_KEY`, `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRES_MINUTES`, `CORS_ORIGINS`.
 
 There is no environment-level seed account and no global deposit setting: every organization and
 its admin account come from an explicit `provision_organization` run (below), and the deposit
