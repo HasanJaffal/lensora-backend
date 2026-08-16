@@ -7,8 +7,6 @@ Org B's data and never a distinguishable "exists but forbidden" response.
 
 from httpx import AsyncClient
 
-_PNG = ("form.png", b"\x89PNG\r\n\x1a\n fake image bytes", "image/png")
-
 
 async def _patient_id(client: AsyncClient, name_en: str) -> str:
     response = await client.get("/api/v1/patients", params={"pageSize": 100})
@@ -291,30 +289,6 @@ async def test_org_a_cannot_update_org_bs_intake(
     intake_id = created.json()["data"]["id"]
 
     response = await org_a_client.patch(f"/api/v1/intake/{intake_id}", json={"status": "draft"})
-
-    assert response.status_code == 404
-    assert response.json()["error"]["code"] == "resource.notFound"
-
-
-async def test_org_a_cannot_read_org_bs_import(
-    org_a_client: AsyncClient, org_b_client: AsyncClient
-) -> None:
-    created = await org_b_client.post("/api/v1/imports", files={"file": _PNG})
-    import_id = created.json()["data"]["id"]
-
-    response = await org_a_client.get(f"/api/v1/imports/{import_id}")
-
-    assert response.status_code == 404
-    assert response.json()["error"]["code"] == "resource.notFound"
-
-
-async def test_org_a_cannot_use_org_bs_import_as_intake(
-    org_a_client: AsyncClient, org_b_client: AsyncClient
-) -> None:
-    created = await org_b_client.post("/api/v1/imports", files={"file": _PNG})
-    import_id = created.json()["data"]["id"]
-
-    response = await org_a_client.post(f"/api/v1/imports/{import_id}/use-as-intake")
 
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "resource.notFound"

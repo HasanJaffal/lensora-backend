@@ -35,13 +35,6 @@ class ErrorCode(StrEnum):
     INVENTORY_OUT_OF_STOCK = "inventory.outOfStock"
     INVENTORY_SKU_TAKEN = "inventory.skuTaken"
 
-    # Import
-    IMPORT_FILE_TOO_LARGE = "import.fileTooLarge"
-    IMPORT_UNSUPPORTED_TYPE = "import.unsupportedType"
-
-    # AI
-    AI_UNAVAILABLE = "ai.unavailable"
-
     # Attachments
     ATTACHMENT_NOT_FOUND = "attachment.notFound"
     ATTACHMENT_INVALID_FOLDER = "attachment.invalidFolder"

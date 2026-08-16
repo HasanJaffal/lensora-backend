@@ -92,21 +92,6 @@ class AccountEmailTakenError(ConflictError):
     default_code = ErrorCode.AUTH_EMAIL_TAKEN
 
 
-class UnsupportedMediaTypeError(AppError):
-    http_status = HTTPStatus.UNSUPPORTED_MEDIA_TYPE
-    default_code = ErrorCode.IMPORT_UNSUPPORTED_TYPE
-
-
-class PayloadTooLargeError(AppError):
-    http_status = HTTPStatus.REQUEST_ENTITY_TOO_LARGE
-    default_code = ErrorCode.IMPORT_FILE_TOO_LARGE
-
-
-class AIUnavailableError(AppError):
-    http_status = HTTPStatus.SERVICE_UNAVAILABLE
-    default_code = ErrorCode.AI_UNAVAILABLE
-
-
 class AttachmentNotFoundError(NotFoundError):
     default_code = ErrorCode.ATTACHMENT_NOT_FOUND
 
