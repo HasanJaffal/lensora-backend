@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Annotated
 
-from pydantic import Field, field_validator
+from pydantic import EmailStr, Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     secret_key: str | None = Field(default=None, alias="SECRET_KEY")
     jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
     access_token_expires_minutes: int = Field(default=60 * 24, alias="ACCESS_TOKEN_EXPIRES_MINUTES")
-    platform_admin_email: str | None = Field(default=None, alias="PLATFORM_ADMIN_EMAIL")
+    platform_admin_email: EmailStr | None = Field(default=None, alias="PLATFORM_ADMIN_EMAIL")
     platform_admin_password: str | None = Field(default=None, alias="PLATFORM_ADMIN_PASSWORD")
     platform_admin_display_name_en: str = Field(
         default="Platform Admin", alias="PLATFORM_ADMIN_DISPLAY_NAME_EN"
