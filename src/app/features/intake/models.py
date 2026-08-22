@@ -17,8 +17,8 @@ class IntakeSubmission(TenantEntity):
     """A first-visit intake questionnaire (FR-INT).
 
     Each BRD section is persisted as a structured JSON document so the form can evolve
-    without a migration per field. Intake answers are intentionally NOT mapped into the
-    patient record here (BRD §7.5); the optional ``patient_id`` only links the two.
+    without a migration per field. Completing an intake opens the patient record it stands for,
+    and ``patient_id`` links the questionnaire to that record; a draft has none yet.
     """
 
     __tablename__ = "intake_submissions"

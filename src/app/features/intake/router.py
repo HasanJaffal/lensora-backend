@@ -15,12 +15,16 @@ from app.features.intake.schemas import (
     IntakeUpdateRequest,
 )
 from app.features.intake.service import IntakeService
+from app.features.patients.repository import PatientRepository
 
 router = APIRouter(prefix="/intake", tags=["intake"], dependencies=[Depends(require_auth)])
 
 
 def get_intake_service(session: SessionDep, tenant_context: TenantContextDep) -> IntakeService:
-    return IntakeService(IntakeRepository(session, tenant_context))
+    return IntakeService(
+        IntakeRepository(session, tenant_context),
+        PatientRepository(session, tenant_context),
+    )
 
 
 IntakeServiceDep = Annotated[IntakeService, Depends(get_intake_service)]
