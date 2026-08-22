@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from app.db.seeds.types import InventorySeed
+from tests.fixtures.types import InventorySeed
 
 # quantity vs threshold is tuned to exercise every derived state (FR-STK-3):
 # In stock (quantity > threshold), Low (0 < quantity <= threshold), Out (quantity = 0).

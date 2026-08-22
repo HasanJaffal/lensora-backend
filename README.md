@@ -73,11 +73,14 @@ cp .env.example .env
 ```
 
 Settings keys: `APP_ENV`, `API_PORT`, `DATABASE_URL`, `POSTGRES_USER`, `POSTGRES_PASSWORD`,
-`POSTGRES_DB`, `SECRET_KEY`, `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRES_MINUTES`, `CORS_ORIGINS`.
+`POSTGRES_DB`, `SECRET_KEY`, `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRES_MINUTES`, `CORS_ORIGINS`,
+`PLATFORM_ADMIN_EMAIL`, `PLATFORM_ADMIN_PASSWORD`, `PLATFORM_ADMIN_DISPLAY_NAME_EN`,
+`PLATFORM_ADMIN_DISPLAY_NAME_AR`.
 
-There is no environment-level seed account and no global deposit setting: every organization and
-its admin account come from an explicit `provision_organization` run (below), and the deposit
-percentage is a per-organization value passed at provisioning time.
+The platform admin is the only seeded account, and there is no global deposit setting: every
+organization and its admin account are created by the platform admin (or an explicit
+`provision_organization` run), and the deposit percentage is a per-organization value passed at
+provisioning time.
 
 ## Developer tasks
 
@@ -109,8 +112,8 @@ feature model so autogenerate sees the full schema).
 
 Migrations are **code-first**: change the models, then autogenerate and **review the result by
 hand** — Alembic emits renames as drop+add, which would drop data if applied blindly. One migration
-per logical schema change; never edit a migration that has already been applied. Seed data lives in
-`db/seed.py`, never in migrations.
+per logical schema change; never edit a migration that has already been applied. The only seeded
+data lives in `db/seeds/`, never in migrations.
 
 ```bash
 docker compose up -d db          # a running Postgres is required
@@ -128,9 +131,12 @@ at `localhost` (the `db` hostname only resolves inside the compose network).
 
 ## Provisioning organizations
 
-Lensora is multi-tenant: there is no environment-seeded account. Every organization and its single
-`ORGANIZATION_ADMIN` account are created by running the `provision_organization` management
-command, which also seeds that organization's default lens catalog and tips:
+Lensora is multi-tenant and ships with no pre-created organizations. Every organization and its
+single `ORGANIZATION_ADMIN` account are created by the platform admin in-app (**Organization
+Management**), or by running the equivalent `provision_organization` management command. Both
+paths also seed that organization's default lens catalog and tips — the read-only reference data
+the lens-order flow needs — and nothing else: a new organization starts with no patients, no
+inventory, and no orders.
 
 ```bash
 uv run python -m app.management.provision_organization \
@@ -148,19 +154,44 @@ reachable the same way `uv run alembic upgrade head` does. With the stack alread
 equivalent inside the container is
 `docker compose exec api python -m app.management.provision_organization ...`.
 
-## Provisioning the platform admin
+## The platform admin
 
-The single `PLATFORM_ADMIN` account is provisioned the same way, by a developer with database
-access — never from an environment variable and never seeded at app startup. It signs in through
-the same `/login` form as any tenant admin and lands in the platform-admin section, which has its
-own sidebar: a **Dashboard** tab (platform-wide organization counts) and an **Organization
-Management** tab (list organizations, provision new ones, activate/deactivate them).
+The single `PLATFORM_ADMIN` account is the **only** account the application seeds, and its
+credentials come from the environment:
 
-```bash
-uv run python -m app.management.provision_platform_admin \
-    --email admin@lensora.example --password change-me \
-    --display-name-en "Platform Admin" --display-name-ar "مسؤول المنصة"
+```dotenv
+PLATFORM_ADMIN_EMAIL=admin@lensora.example
+PLATFORM_ADMIN_PASSWORD=change-me
+PLATFORM_ADMIN_DISPLAY_NAME_EN=Platform Admin
+PLATFORM_ADMIN_DISPLAY_NAME_AR=مسؤول المنصة
 ```
 
-Re-running with an existing email fails cleanly unless `--rotate-password` is passed, in which case
-it updates the password and display names on the existing account instead of creating a new one.
+The account is created on startup, after migrations have been applied, by the lifespan hook in
+[`src/app/main.py`](src/app/main.py) (see
+[`db/seeds/platform_admin.py`](src/app/db/seeds/platform_admin.py)). The environment stays the
+source of truth: each boot re-applies the configured email, password, and display names to the
+existing account rather than creating a second one, so **rotating the password means editing
+`PLATFORM_ADMIN_PASSWORD` and restarting**. Leaving either `PLATFORM_ADMIN_EMAIL` or
+`PLATFORM_ADMIN_PASSWORD` blank skips seeding entirely.
+
+If `PLATFORM_ADMIN_EMAIL` is already in use by an organization admin, startup fails with
+`auth.emailTaken` rather than silently promoting a tenant account.
+
+The platform admin signs in through the same `/login` form as any tenant admin and lands in the
+platform-admin section, which has its own sidebar: a **Dashboard** tab (platform-wide organization
+counts) and an **Organization Management** tab (list organizations, provision new ones,
+activate/deactivate them).
+
+## Seed data
+
+Only two things are ever seeded:
+
+1. **The platform admin**, from the environment (above).
+2. **Per-organization catalog defaults** — lens types, materials, coatings, tints, and tips —
+   applied when an organization is provisioned ([`db/seeds/`](src/app/db/seeds)). These are
+   read-only reference rows the lens-order flow depends on, scoped to the organization that owns
+   them and idempotent by natural key.
+
+There is no demo data and there are no pre-created organizations. The deterministic patient and
+inventory rows used by the test suite live under [`tests/fixtures/`](tests/fixtures) and are never
+importable from application code.

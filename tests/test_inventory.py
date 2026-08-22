@@ -3,12 +3,12 @@ from decimal import Decimal
 import pytest
 from httpx import AsyncClient
 
-from app.db.seeds import INVENTORY_ITEMS
 from app.features.inventory.status import (
     StockStatus,
     derive_stock_status,
     quantity_ratio,
 )
+from tests.fixtures import INVENTORY_ITEMS
 
 
 @pytest.mark.parametrize(

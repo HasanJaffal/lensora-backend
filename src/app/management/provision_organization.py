@@ -6,8 +6,8 @@ Usage:
         --admin-email admin@acme.com --admin-password change-me \\
         --admin-display-name-en "Dr. Jane Doe" --admin-display-name-ar "د. جين دو"
 
-Replaces the old ``SEED_DOCTOR_*`` env-seed path: every account now comes from an explicit,
-auditable provisioning run rather than implicit startup seeding. Re-running with the same
+The command-line equivalent of ``POST /api/v1/platform-admin/organizations``, kept for ops and
+scripting use; both call the same ``OrganizationProvisioningService``. Re-running with the same
 org slug/admin email fails cleanly (each must be globally unique) rather than duplicating data;
 the org's catalog/tips defaults are seeded idempotently by natural key, so a second run against
 an already-provisioned organization only fills in whatever defaults are still missing.

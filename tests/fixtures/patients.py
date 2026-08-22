@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from app.db.seeds.types import (
+from tests.fixtures.types import (
     LensConfigSeed,
     NoteSeed,
     PatientSeed,

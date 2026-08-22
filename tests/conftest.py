@@ -20,7 +20,6 @@ from app.common.deps import (
     get_current_user,
     get_uow_sessionmaker,
 )
-from app.db import seed as seed_module
 from app.db.registry import Base
 from app.db.seeds.organization_defaults import seed_lens_catalog, seed_tips
 from app.db.session import get_session
@@ -36,6 +35,7 @@ from app.features.organizations.service import (
 )
 from app.main import create_app
 from tests.fake_object_storage import FakeObjectStorage
+from tests.fixtures import insert_inventory_fixture, insert_patient_fixture
 
 TEST_ADMIN_PASSWORD = "correct-horse"
 
@@ -98,8 +98,8 @@ async def _seed_test_db(sessionmaker: async_sessionmaker[AsyncSession]) -> Provi
         organization_id = tenant.organization.id
         await seed_lens_catalog(session, organization_id)
         await seed_tips(session, organization_id)
-        await seed_module._seed_inventory(session, organization_id)
-        await seed_module._seed_patients(session, organization_id)
+        await insert_inventory_fixture(session, organization_id)
+        await insert_patient_fixture(session, organization_id)
     return tenant
 
 
@@ -235,8 +235,8 @@ async def two_org_db_sessionmaker() -> AsyncIterator[
             organization_id = tenant.organization.id
             await seed_lens_catalog(session, organization_id)
             await seed_tips(session, organization_id)
-            await seed_module._seed_inventory(session, organization_id)
-            await seed_module._seed_patients(session, organization_id)
+            await insert_inventory_fixture(session, organization_id)
+            await insert_patient_fixture(session, organization_id)
 
     try:
         yield sessionmaker, org_a, org_b
