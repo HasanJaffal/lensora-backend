@@ -20,7 +20,14 @@ async def _seed_platform_admin_on_startup(_app: FastAPI) -> AsyncIterator[None]:
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    app = FastAPI(title="Lensora API", lifespan=_seed_platform_admin_on_startup)
+    is_production = settings.app_env == "production"
+    app = FastAPI(
+        title="Lensora API",
+        lifespan=_seed_platform_admin_on_startup,
+        docs_url=None if is_production else "/docs",
+        redoc_url=None if is_production else "/redoc",
+        openapi_url=None if is_production else "/openapi.json",
+    )
 
     app.add_middleware(
         CORSMiddleware,

@@ -1,0 +1,20 @@
+# User systemd unit (~/.config/systemd/user/lensora-backup.service). Requires
+# `loginctl enable-linger hasan` so the timer fires even when hasan isn't logged in.
+#
+# Install:
+#   mkdir -p ~/.config/systemd/user
+#   cp lensora-backup.service lensora-backup.timer ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now lensora-backup.timer
+[Unit]
+Description=Nightly pg_dump of the lensora database
+
+[Service]
+Type=oneshot
+# lensora-backup.env holds one line: PGPASSWORD=<the db password>, mode 600.
+EnvironmentFile=%h/.config/lensora-backup.env
+ExecStart=/bin/sh -c 'set -eu; \
+  mkdir -p /var/www/lensora/backups; \
+  pg_dump -h 127.0.0.1 -U lensora -d lensora \
+    | gzip > /var/www/lensora/backups/lensora-$(date +\%%Y\%%m\%%d-\%%H\%%M\%%S).sql.gz; \
+  find /var/www/lensora/backups -name "lensora-*.sql.gz" -mtime +7 -delete'

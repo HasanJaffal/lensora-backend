@@ -23,4 +23,4 @@ COPY --chown=app:app migrations ./migrations
 ENV PATH="/app/.venv/bin:$PATH"
 USER app
 EXPOSE 8000
-CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port ${API_PORT:-8000}"]
+CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host ${API_HOST:-0.0.0.0} --port ${API_PORT:-8000}"]

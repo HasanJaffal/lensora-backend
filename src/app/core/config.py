@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     attachment_signed_url_expires_seconds: int = Field(
         default=3600, alias="ATTACHMENT_SIGNED_URL_EXPIRES_SECONDS"
     )
+    db_pool_size: int = Field(default=5, alias="DB_POOL_SIZE")
+    db_max_overflow: int = Field(default=5, alias="DB_MAX_OVERFLOW")
 
     @field_validator("cors_origins", mode="before")
     @classmethod
